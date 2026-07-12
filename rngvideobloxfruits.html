@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Blox Fruits Random Build Generator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      color: white;
+      background: linear-gradient(135deg, #10162f, #29174f, #0b6b86);
+    }
+
+    .container {
+      width: min(950px, 92%);
+      padding: 35px;
+      text-align: center;
+      border-radius: 24px;
+      background: rgba(10, 15, 35, 0.9);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+    }
+
+    .subtitle {
+      color: #b9c3e1;
+      margin-bottom: 30px;
+    }
+
+    .build-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin: 25px 0;
+    }
+
+    .card {
+      padding: 20px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      color: #7de7ff;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    .result {
+      min-height: 30px;
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 16px 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(90deg, #7c3aed, #0891b2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(8, 145, 178, 0.35);
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>🎲 Blox Fruits Build Generator</h1>
+
+    <p class="subtitle">
+      Click the button and let RNG decide your build.
+    </p>
+
+    <div class="build-grid">
+
+      <div class="card">
+        <h3>🍎 Fruit</h3>
+        <div class="result" id="fruit">???</div>
+      </div>
+
+      <div class="card">
+        <h3>🥊 Fighting Style</h3>
+        <div class="result" id="style">???</div>
+      </div>
+
+      <div class="card">
+        <h3>⚔️ Sword</h3>
+        <div class="result" id="sword">???</div>
+      </div>
+
+      <div class="card">
+        <h3>🔫 Gun</h3>
+        <div class="result" id="gun">???</div>
+      </div>
+
+      <div class="card">
+        <h3>🧬 Race</h3>
+        <div class="result" id="race">???</div>
+      </div>
+
+    </div>
+
+    <button onclick="generateBuild()">
+      🎲 Generate Random Build
+    </button>
+
+  </main>
+
+
+  <script>
+
+    // =========================
+    // FRUITS
+    // =========================
+
+    const fruits = [
+      "Rocket",
+      "Spin",
+      "Blade",
+      "Spring",
+      "Bomb",
+      "Smoke",
+      "Spike",
+      "Flame",
+      "Eagle",
+      "Ice",
+      "Sand",
+      "Dark",
+      "Diamond",
+      "Light",
+      "Rubber",
+      "Creation",
+      "Ghost",
+      "Magma",
+      "Quake",
+      "Buddha",
+      "Love",
+      "Spider",
+      "Sound",
+      "Phoenix",
+      "Portal",
+      "Lightning",
+      "Pain",
+      "Blizzard",
+      "Gravity",
+      "Mammoth",
+      "T-Rex",
+      "Dough",
+      "Shadow",
+      "Venom",
+      "Control",
+      "Spirit",
+      "Tiger",
+      "Kitsune",
+      "Dragon",
+      "Gas",
+      "Yeti",
+      "Magnet",
+      "Chimera",
+      "Forest",
+      "Program"
+    ];
+
+
+    // =========================
+    // FIGHTING STYLES
+    // =========================
+
+    const fightingStyles = [
+      "Combat",
+      "Dark Step",
+      "Electric",
+      "Water Kung Fu",
+      "Dragon Breath",
+      "Superhuman",
+      "Death Step",
+      "Sharkman Karate",
+      "Electric Claw",
+      "Dragon Talon",
+      "Godhuman",
+      "Sanguine Art",
+      "Divine Art"
+    ];
+
+
+    // =========================
+    // SWORDS
+    // =========================
+
+    const swords = [
+      "Bisento",
+      "Buddy Sword",
+      "Canvander",
+      "Cursed Dual Katana",
+      "Cutlass",
+      "Dark Blade",
+      "Dark Dagger",
+      "Dragon Trident",
+      "Dragonheart",
+      "Dual Katana",
+      "Dual-Headed Blade",
+      "Fishing Trophy",
+      "Flail",
+      "Fox Lamp",
+      "Gravity Blade",
+      "Hallow Scythe",
+      "Iron Mace",
+      "Katana",
+      "Koko",
+      "Longsword",
+      "Midnight Blade",
+      "Oroshi",
+      "Pipe",
+      "Pole (1st Form)",
+      "Pole (2nd Form)",
+      "Rengoku",
+      "Saber",
+      "Saishi",
+      "Shark Anchor",
+      "Shark Saw",
+      "Shizu",
+      "Soul Cane",
+      "Spikey Trident",
+      "Trident",
+      "Triple Dark Blade",
+      "Triple Katana",
+      "True Triple Katana",
+      "Tushita",
+      "Twin Hooks",
+      "Wardens Sword",
+      "Yama"
+    ];
+
+
+    // =========================
+    // GUNS
+    // =========================
+
+    const guns = [
+      "Acidum Rifle",
+      "Bazooka",
+      "Bizarre Revolver",
+      "Bizarre Rifle",
+      "Cannon",
+      "Dragonstorm",
+      "Dual Flintlock",
+      "Flintlock",
+      "Kabucha",
+      "Magma Blaster",
+      "Musket",
+      "Refined Flintlock",
+      "Refined Musket",
+      "Refined Slingshot",
+      "Shotgun",
+      "Skull Guitar",
+      "Slingshot",
+      "Venom Bow"
+    ];
+
+
+    // =========================
+    // RACES
+    // =========================
+
+    const races = [
+      "Human",
+      "Rabbit",
+      "Shark",
+      "Angel",
+      "Ghoul",
+      "Cyborg",
+      "Draco"
+    ];
+
+
+    // =========================
+    // RANDOMIZER
+    // =========================
+
+    function randomItem(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+
+    function generateBuild() {
+
+      document.getElementById("fruit").textContent =
+        randomItem(fruits);
+
+      document.getElementById("style").textContent =
+        randomItem(fightingStyles);
+
+      document.getElementById("sword").textContent =
+        randomItem(swords);
+
+      document.getElementById("gun").textContent =
+        randomItem(guns);
+
+      document.getElementById("race").textContent =
+        randomItem(races);
+    }
+
+  </script>
+
+</body>
+</html>
