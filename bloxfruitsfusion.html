@@ -38,15 +38,22 @@
 
         .fruit-panel {
             background-color: var(--panel-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 15px;
             border: 2px solid var(--neon-purple);
             box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
-            width: 200px;
+            width: 220px;
+            height: 450px; /* Fixed height */
+            overflow-y: auto; /* Makes it scrollable! */
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
+
+        /* Custom Scrollbar for panels */
+        .fruit-panel::-webkit-scrollbar { width: 8px; }
+        .fruit-panel::-webkit-scrollbar-track { background: #0b0c10; border-radius: 10px; }
+        .fruit-panel::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 10px; }
 
         .fruit {
             background: linear-gradient(45deg, #45a247, #283c86);
@@ -57,22 +64,11 @@
             border: 2px solid transparent;
             transition: transform 0.2s, box-shadow 0.2s;
             user-select: none;
+            flex-shrink: 0;
         }
 
-        .fruit:active {
-            cursor: grabbing;
-        }
-
-        .fruit:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 10px white;
-        }
-
-        /* Unique colors for some fruits just for flavor */
-        .fruit[data-name="Dough"] { background: linear-gradient(45deg, #f5deb3, #d2b48c); color: black; }
-        .fruit[data-name="Kitsune"] { background: linear-gradient(45deg, #ff7e5f, #feb47b); color: black; }
-        .fruit[data-name="Dragon"] { background: linear-gradient(45deg, #ff416c, #ff4b2b); }
-        .fruit[data-name="Leopard"] { background: linear-gradient(45deg, #fceabb, #f8b500); color: black; }
+        .fruit:active { cursor: grabbing; }
+        .fruit:hover { transform: scale(1.05); box-shadow: 0 0 10px white; }
 
         .machine {
             background-color: var(--panel-bg);
@@ -84,6 +80,7 @@
             flex-direction: column;
             align-items: center;
             position: relative;
+            min-width: 350px;
         }
 
         .chamber {
@@ -94,15 +91,16 @@
         }
 
         .slot {
-            width: 120px;
-            height: 120px;
+            width: 130px;
+            height: 130px;
             border: 3px dashed rgba(255, 255, 255, 0.5);
             border-radius: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
+            text-align: center;
             transition: all 0.3s;
             background-color: rgba(0, 0, 0, 0.5);
         }
@@ -153,25 +151,17 @@
         .result-text {
             font-size: 3rem;
             font-weight: bold;
-            background: -webkit-linear-gradient(#fff, var(--neon-purple));
+            background: -webkit-linear-gradient(#fff, var(--neon-blue));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(188, 19, 254, 0.8);
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.8);
             animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
         /* --- ANIMATIONS --- */
-        .animating-chamber {
-            animation: chamberShake 1.5s ease-in-out forwards;
-        }
-
-        .animating-slot-left {
-            animation: convergeLeft 1.5s forwards;
-        }
-
-        .animating-slot-right {
-            animation: convergeRight 1.5s forwards;
-        }
+        .animating-chamber { animation: chamberShake 1.5s ease-in-out forwards; }
+        .animating-slot-left { animation: convergeLeft 1.5s forwards; }
+        .animating-slot-right { animation: convergeRight 1.5s forwards; }
 
         .flash-overlay {
             position: fixed;
@@ -182,9 +172,7 @@
             z-index: 100;
         }
 
-        .flash-active {
-            animation: whiteoutFlash 1s forwards;
-        }
+        .flash-active { animation: whiteoutFlash 1s forwards; }
 
         @keyframes chamberShake {
             0%, 100% { transform: translate(0, 0) rotate(0deg); }
@@ -192,41 +180,19 @@
             20%, 40%, 60%, 80% { transform: translate(5px, -5px) rotate(2deg); }
         }
 
-        @keyframes convergeLeft {
-            100% { transform: translateX(75px) scale(1.2); opacity: 0; filter: brightness(2); }
-        }
-
-        @keyframes convergeRight {
-            100% { transform: translateX(-75px) scale(1.2); opacity: 0; filter: brightness(2); }
-        }
-
-        @keyframes whiteoutFlash {
-            0% { opacity: 0; }
-            50% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            80% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes convergeLeft { 100% { transform: translateX(80px) scale(1.2); opacity: 0; filter: brightness(2); } }
+        @keyframes convergeRight { 100% { transform: translateX(-80px) scale(1.2); opacity: 0; filter: brightness(2); } }
+        @keyframes whiteoutFlash { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <h1>🧬 Blox Fruits DNA Splicer 🧬</h1>
+    <h1>🧬 Blox Fruits Recipe Fusion 🧬</h1>
 
     <div class="container">
         <!-- Left Fruit Panel -->
-        <div class="fruit-panel" id="fruit-list-1">
-            <div class="fruit" draggable="true" data-name="Kitsune">Kitsune</div>
-            <div class="fruit" draggable="true" data-name="Dough">Dough</div>
-            <div class="fruit" draggable="true" data-name="Leopard">Leopard</div>
-            <div class="fruit" draggable="true" data-name="Dragon">Dragon</div>
-            <div class="fruit" draggable="true" data-name="Portal">Portal</div>
-            <div class="fruit" draggable="true" data-name="Buddha">Buddha</div>
-        </div>
+        <div class="fruit-panel" id="fruit-list-1"></div>
 
         <!-- The Machine -->
         <div class="machine">
@@ -242,20 +208,44 @@
         </div>
 
         <!-- Right Fruit Panel -->
-        <div class="fruit-panel" id="fruit-list-2">
-            <div class="fruit" draggable="true" data-name="T-Rex">T-Rex</div>
-            <div class="fruit" draggable="true" data-name="Rumble">Rumble</div>
-            <div class="fruit" draggable="true" data-name="Venom">Venom</div>
-            <div class="fruit" draggable="true" data-name="Spirit">Spirit</div>
-            <div class="fruit" draggable="true" data-name="Magma">Magma</div>
-            <div class="fruit" draggable="true" data-name="Ice">Ice</div>
-        </div>
+        <div class="fruit-panel" id="fruit-list-2"></div>
     </div>
 
     <!-- For the explosion effect -->
     <div class="flash-overlay" id="flash"></div>
 
     <script>
+        // The master list of all fruits
+        const allFruits = [
+            "Barrier", "Blade", "Blizzard", "Bomb", "Buddha", "Chop", "Control", "Creation", 
+            "Dark", "Diamond", "Door", "Dough", "Dragon", "Dragon (Classic)", "Eagle", "Falcon", 
+            "Flame", "Gas", "Ghost", "Gravity", "Ice", "Kilo", "Kitsune", "Leopard", "Light", 
+            "Lightning", "Love", "Magma", "Mammoth", "Meme", "Meme (Obtainable)", "Pain", 
+            "Phoenix", "Portal", "Quake", "Revive", "Rocket", "Rogue", "Rubber", "Sand", 
+            "Shadow", "Smoke", "Soul", "Sound", "Spider", "Spike", "Spin", "Spirit", "Spring", 
+            "T-Rex", "Tiger", "Venom"
+        ];
+
+        // Split the list in half to put on the left and right panels
+        const half = Math.ceil(allFruits.length / 2);
+        const leftFruits = allFruits.slice(0, half);
+        const rightFruits = allFruits.slice(half);
+
+        function populatePanel(panelId, fruitArray) {
+            const panel = document.getElementById(panelId);
+            fruitArray.forEach(fruit => {
+                const div = document.createElement('div');
+                div.className = 'fruit';
+                div.draggable = true;
+                div.setAttribute('data-name', fruit);
+                div.textContent = fruit;
+                panel.appendChild(div);
+            });
+        }
+
+        populatePanel('fruit-list-1', leftFruits);
+        populatePanel('fruit-list-2', rightFruits);
+
         const fruits = document.querySelectorAll('.fruit');
         const slots = document.querySelectorAll('.slot');
         const combineBtn = document.getElementById('combine-btn');
@@ -266,29 +256,21 @@
 
         let loadedFruits = { slot1: null, slot2: null };
 
-        // 1. Setup Drag Events
+        // 1. Drag and Drop Logic
         fruits.forEach(fruit => {
             fruit.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', fruit.getAttribute('data-name'));
-                // Make it look slightly transparent while dragging
                 setTimeout(() => fruit.style.opacity = '0.5', 0);
             });
-            fruit.addEventListener('dragend', () => {
-                fruit.style.opacity = '1';
-            });
+            fruit.addEventListener('dragend', () => fruit.style.opacity = '1');
         });
 
-        // 2. Setup Drop Zones (Slots)
         slots.forEach(slot => {
             slot.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Necessary to allow dropping
+                e.preventDefault();
                 slot.classList.add('drag-over');
             });
-
-            slot.addEventListener('dragleave', () => {
-                slot.classList.remove('drag-over');
-            });
-
+            slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
             slot.addEventListener('drop', (e) => {
                 e.preventDefault();
                 slot.classList.remove('drag-over');
@@ -298,28 +280,16 @@
                     slot.textContent = fruitName;
                     slot.classList.add('filled');
                     loadedFruits[slot.id] = fruitName;
-                    
-                    // Style the slot based on the fruit dropped
-                    const draggedFruitEl = document.querySelector(`.fruit[data-name="${fruitName}"]`);
-                    if(draggedFruitEl) {
-                        slot.style.background = window.getComputedStyle(draggedFruitEl).background;
-                    }
-                    
                     checkReady();
                 }
             });
         });
 
-        // 3. Check if both slots are full
         function checkReady() {
-            if (loadedFruits.slot1 && loadedFruits.slot2) {
-                combineBtn.disabled = false;
-            } else {
-                combineBtn.disabled = true;
-            }
+            combineBtn.disabled = !(loadedFruits.slot1 && loadedFruits.slot2);
         }
 
-        // 4. Reset functionality
+        // 2. Reset Machine
         resetBtn.addEventListener('click', resetMachine);
 
         function resetMachine() {
@@ -330,64 +300,59 @@
             slots.forEach(slot => {
                 slot.textContent = 'Drop Fruit';
                 slot.classList.remove('filled', 'animating-slot-left', 'animating-slot-right');
-                slot.style.background = '';
                 slot.style.transform = '';
                 slot.style.opacity = '';
                 slot.style.filter = '';
             });
-            
             chamber.classList.remove('animating-chamber');
         }
 
-        // 5. The Combine Animation & Logic
+        // 3. Fusion Logic (Actual Recipes!)
+        function getFusionResult(f1, f2) {
+            // Sort them so order doesn't matter (Rocket+Kilo is the same as Kilo+Rocket)
+            const sorted = [f1, f2].sort();
+            const pair = `${sorted[0]} + ${sorted[1]}`;
+
+            // --- HARDCODED RECIPES ---
+            if (pair === "Kilo + Rocket") return "Flame";
+            if (pair === "Flame + Ice") return "Blizzard";
+            if (pair === "Dark + Light") return "Portal";
+            if (pair === "Buddha + T-Rex") return "Mammoth";
+            if (pair === "Dragon + Kitsune") return "Meme";
+
+            // --- PROCEDURAL GENERATION ---
+            // If it's not a hardcoded recipe, we generate a consistent result based on their names.
+            // This guarantees the same two fruits ALWAYS make the same result fruit.
+            let hash = 0;
+            for (let i = 0; i < pair.length; i++) {
+                hash = pair.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            // Use the hash to pick a fruit from the master list
+            const index = Math.abs(hash) % allFruits.length;
+            return allFruits[index];
+        }
+
+        // 4. Combine Animation
         combineBtn.addEventListener('click', () => {
             combineBtn.disabled = true;
-            resultDisplay.innerHTML = ''; // clear old result
+            resultDisplay.innerHTML = '';
 
             const f1 = loadedFruits.slot1;
             const f2 = loadedFruits.slot2;
 
-            // Trigger Animations
             chamber.classList.add('animating-chamber');
             document.getElementById('slot1').classList.add('animating-slot-left');
             document.getElementById('slot2').classList.add('animating-slot-right');
 
-            // Wait for slots to converge, then flash
-            setTimeout(() => {
-                flash.classList.add('flash-active');
-            }, 1000);
+            setTimeout(() => flash.classList.add('flash-active'), 1000);
 
-            // Wait for flash to peak, then show result and reset slots invisibly
             setTimeout(() => {
-                showResult(f1, f2);
+                const finalFruit = getFusionResult(f1, f2);
+                resultDisplay.innerHTML = `<div class="result-text">${finalFruit}</div>`;
                 flash.classList.remove('flash-active');
-                
-                // Hide the slots while the result is showing
                 slots.forEach(slot => slot.style.opacity = '0');
             }, 1500);
         });
-
-        // 6. Generate the Hybrid Name
-        function showResult(fruit1, fruit2) {
-            const prefixes = ["Awakened", "Abyssal", "Radiant", "Corrupted", "Demonic", "Cosmic", "Prime"];
-            const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-            
-            // Sometimes it fuses perfectly, sometimes it's a messy hybrid
-            const roll = Math.random();
-            let hybridName = "";
-            
-            if (roll > 0.5 && fruit1 !== fruit2) {
-                // Slice names together (e.g., Kitsune + Dough = Kitsough)
-                const part1 = fruit1.slice(0, Math.ceil(fruit1.length / 2));
-                const part2 = fruit2.slice(Math.floor(fruit2.length / 2));
-                hybridName = `${randomPrefix} ${part1}${part2}`;
-            } else {
-                // Hyphenated hybrid
-                hybridName = `${randomPrefix} ${fruit1}-${fruit2}`;
-            }
-
-            resultDisplay.innerHTML = `<div class="result-text">${hybridName}</div>`;
-        }
     </script>
 </body>
 </html>
