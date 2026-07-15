@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blox Egg Clicker Ultimate</title>
+    <title>Blox Egg Clicker: Categories</title>
     <style>
         :root {
             --bg-color: #1a1a24;
@@ -63,9 +63,11 @@
             font-size: 1.2rem;
             color: #a4b0be;
             margin-bottom: 40px;
+            background: #2d2d3a;
+            padding: 10px 20px;
+            border-radius: 8px;
         }
 
-        /* The main clickable element */
         #click-button {
             font-size: 150px;
             background: none;
@@ -79,7 +81,6 @@
             transform: scale(0.85);
         }
 
-        /* Store styling */
         h2 {
             border-bottom: 2px solid var(--panel-bg);
             padding-bottom: 10px;
@@ -120,6 +121,9 @@
             margin: 0 0 5px 0;
             color: var(--text-color);
             font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .upgrade-info p {
@@ -144,7 +148,6 @@
             text-align: right;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 12px; }
         ::-webkit-scrollbar-track { background: var(--bg-color); }
         ::-webkit-scrollbar-thumb { background: var(--panel-bg); border-radius: 6px; }
@@ -177,46 +180,49 @@
         let eggsPerSecond = 0;
         let eggsPerClick = 1;
 
-        // The Massive Item List (Now including Fighting Styles!)
-        const rawItems = [
-            // Fighting Styles
-            "Combat", "Dark Step", "Death Step", "Dragon Breath", "Dragon Talon", "Electric", "Electric Claw", "Godhuman", "Sanguine Art", "Sharkman Karate", "Superhuman", "Water Kung Fu",
-            // Fruits
-            "Barrier", "Blade", "Blizzard", "Bomb", "Buddha", "Chop", "Control", "Creation", "Dark", "Diamond", "Door", "Dough", "Dragon", "Dragon (Classic)", "Eagle", "Falcon", "Flame", "Gas", "Ghost", "Gravity", "Ice", "Kilo", "Kitsune", "Leopard", "Light", "Lightning", "Love", "Magma", "Mammoth", "Meme", "Meme (Obtainable)", "Pain", "Phoenix", "Portal", "Quake", "Revive", "Rocket", "Rogue", "Rubber", "Sand", "Shadow", "Smoke", "Soul", "Sound", "Spider", "Spike", "Spin", "Spirit", "Spring", "T-Rex", "Tiger", "Venom", "Yeti",
-            // Swords
-            "Bisento", "Buddy Sword", "Canvander", "Cursed Dual Katana", "Cutlass", "Dark Blade", "Dark Dagger", "Dragon Trident", "Dragonheart", "Dual Katana", "Dual-Headed Blade", "Fishing Trophy", "Flail", "Fox Lamp", "Gravity Blade", "Hallow Scythe", "Iron Mace", "Katana", "Koko", "Longsword", "Midnight Blade", "Oroshi", "Pipe", "Pole (1st Form)", "Pole (2nd Form)", "Rengoku", "Saber", "Saishi", "Shark Anchor", "Shark Saw", "Shizu", "Soul Cane", "Spikey Trident", "Trident", "Triple Dark Blade", "Triple Katana", "True Triple Katana", "Tushita", "Twin Hooks", "Wardens Sword", "Yama",
-            // Guns
-            "Acidum Rifle", "Bazooka", "Bizarre Revolver", "Bizarre Rifle", "Cannon", "Dragonstorm", "Dual Flintlock", "Flintlock", "Kabucha", "Magma Blaster", "Musket", "Refined Flintlock", "Refined Musket", "Refined Slingshot", "Shotgun", "Skull Guitar", "Slingshot", "Venom Bow"
-        ];
+        // Categorized Lists
+        const fightingStyles = ["Combat", "Dark Step", "Death Step", "Dragon Breath", "Dragon Talon", "Electric", "Electric Claw", "Godhuman", "Sanguine Art", "Sharkman Karate", "Superhuman", "Water Kung Fu"];
+        const fruits = ["Barrier", "Blade", "Blizzard", "Bomb", "Buddha", "Chop", "Control", "Creation", "Dark", "Diamond", "Door", "Dough", "Dragon", "Dragon (Classic)", "Eagle", "Falcon", "Flame", "Gas", "Ghost", "Gravity", "Ice", "Kilo", "Kitsune", "Leopard", "Light", "Lightning", "Love", "Magma", "Mammoth", "Meme", "Meme (Obtainable)", "Pain", "Phoenix", "Portal", "Quake", "Revive", "Rocket", "Rogue", "Rubber", "Sand", "Shadow", "Smoke", "Soul", "Sound", "Spider", "Spike", "Spin", "Spirit", "Spring", "T-Rex", "Tiger", "Venom", "Yeti"];
+        const swords = ["Bisento", "Buddy Sword", "Canvander", "Cursed Dual Katana", "Cutlass", "Dark Blade", "Dark Dagger", "Dragon Trident", "Dragonheart", "Dual Katana", "Dual-Headed Blade", "Fishing Trophy", "Flail", "Fox Lamp", "Gravity Blade", "Hallow Scythe", "Iron Mace", "Katana", "Koko", "Longsword", "Midnight Blade", "Oroshi", "Pipe", "Pole (1st Form)", "Pole (2nd Form)", "Rengoku", "Saber", "Saishi", "Shark Anchor", "Shark Saw", "Shizu", "Soul Cane", "Spikey Trident", "Trident", "Triple Dark Blade", "Triple Katana", "True Triple Katana", "Tushita", "Twin Hooks", "Wardens Sword", "Yama"];
+        const guns = ["Acidum Rifle", "Bazooka", "Bizarre Revolver", "Bizarre Rifle", "Cannon", "Dragonstorm", "Dual Flintlock", "Flintlock", "Kabucha", "Magma Blaster", "Musket", "Refined Flintlock", "Refined Musket", "Refined Slingshot", "Shotgun", "Skull Guitar", "Slingshot", "Venom Bow"];
 
-        // Dynamically Generate the Store Items based on the list
-        const storeItems = rawItems.map((name, index) => {
-            // Every 4th item increases your CLICK power instead of AUTO power
-            const isClickUpgrade = (index % 4 === 0); 
-            
-            // Exponentially scale the cost and power so late-game items are insanely strong
-            let baseCost = Math.floor(15 * Math.pow(1.25, index));
-            let power = Math.floor(1 * Math.pow(1.18, index));
+        let globalIndex = 0;
+        const storeItems = [];
+
+        // Function to build the store items logically
+        function addItem(name, category, type) {
+            // Costs scale globally so the game gets progressively harder
+            let baseCost = Math.floor(15 * Math.pow(1.22, globalIndex));
+            let power = Math.floor(1 * Math.pow(1.16, globalIndex));
             if (power < 1) power = 1;
 
-            return {
+            storeItems.push({
                 id: name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
                 name: name,
-                description: isClickUpgrade ? `+${formatNumber(power)} Eggs per click` : `+${formatNumber(power)} Eggs per sec`,
+                category: category,
+                description: type === 'click' ? `+${formatNumber(power)} Eggs per click` : `+${formatNumber(power)} Eggs per sec`,
                 baseCost: baseCost,
                 cost: baseCost,
                 count: 0,
-                type: isClickUpgrade ? 'click' : 'auto',
+                type: type,
                 power: power
-            };
-        });
+            });
+            globalIndex++;
+        }
 
-        // Formatter for huge numbers (M, B, T, Qa)
+        // Add items in order with their specific mechanics!
+        fightingStyles.forEach(name => addItem(name, 'Fighting Style', 'click'));
+        fruits.forEach(name => addItem(name, 'Fruit', 'auto'));
+        swords.forEach(name => addItem(name, 'Sword', 'click'));
+        guns.forEach(name => addItem(name, 'Gun', 'auto'));
+
+        // Formatter for huge numbers (M, B, T, Qa, Qi)
         function formatNumber(num) {
-            if (num >= 1e15) return (num / 1e15).toFixed(2) + ' Qa';
-            if (num >= 1e12) return (num / 1e12).toFixed(2) + ' T';
-            if (num >= 1e9) return (num / 1e9).toFixed(2) + ' B';
-            if (num >= 1e6) return (num / 1e6).toFixed(2) + ' M';
+            if (num >= 1e18) return (num / 1e18).toFixed(2) + ' Qi'; 
+            if (num >= 1e15) return (num / 1e15).toFixed(2) + ' Qa'; 
+            if (num >= 1e12) return (num / 1e12).toFixed(2) + ' T';  
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + ' B';    
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + ' M';    
             return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
 
@@ -239,7 +245,6 @@
                     eggsPerSecond += item.power;
                 }
 
-                // 1.15x price scaling per purchase
                 item.cost = Math.ceil(item.baseCost * Math.pow(1.15, item.count));
 
                 renderStore();
@@ -274,9 +279,14 @@
                 card.className = `upgrade-card ${disabledClass}`;
                 card.onclick = () => buyItem(index);
 
-                // Add a small tag to show if it's a Click or Auto upgrade
-                const tagColor = item.type === 'click' ? '#ff7675' : '#74b9ff';
-                const tag = `<span style="color:${tagColor}; font-size:0.8rem; font-weight:bold;">[${item.type.toUpperCase()}]</span>`;
+                // Determine tag colors based on category
+                let tagColor;
+                if (item.category === 'Fighting Style') tagColor = '#e17055'; // Orange-Red
+                else if (item.category === 'Fruit') tagColor = '#a29bfe'; // Purple
+                else if (item.category === 'Sword') tagColor = '#00cec9'; // Cyan
+                else if (item.category === 'Gun') tagColor = '#ffeaa7'; // Yellow
+
+                const tag = `<span style="color:${tagColor}; font-size:0.7rem; font-weight:bold; letter-spacing:1px; text-transform:uppercase; border: 1px solid ${tagColor}; padding: 2px 6px; border-radius: 4px;">${item.category}</span>`;
 
                 card.innerHTML = `
                     <div class="upgrade-info">
