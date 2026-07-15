@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blox Fruits Fusion Machine</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --bg-color: #0b0c10;
+            --panel-bg: #1f2833;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            font-size: 2.5rem;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .fruit-panel {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+            width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .fruit {
+            background: linear-gradient(45deg, #45a247, #283c86);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            font-weight: bold;
+            border: 2px solid transparent;
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+
+        .fruit:active {
+            cursor: grabbing;
+        }
+
+        .fruit:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px white;
+        }
+
+        /* Unique colors for some fruits just for flavor */
+        .fruit[data-name="Dough"] { background: linear-gradient(45deg, #f5deb3, #d2b48c); color: black; }
+        .fruit[data-name="Kitsune"] { background: linear-gradient(45deg, #ff7e5f, #feb47b); color: black; }
+        .fruit[data-name="Dragon"] { background: linear-gradient(45deg, #ff416c, #ff4b2b); }
+        .fruit[data-name="Leopard"] { background: linear-gradient(45deg, #fceabb, #f8b500); color: black; }
+
+        .machine {
+            background-color: var(--panel-bg);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .chamber {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .slot {
+            width: 120px;
+            height: 120px;
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .slot.drag-over {
+            border-color: var(--neon-blue);
+            background-color: rgba(0, 243, 255, 0.2);
+        }
+
+        .slot.filled {
+            border-style: solid;
+            border-color: var(--neon-purple);
+            background-color: rgba(188, 19, 254, 0.2);
+            text-shadow: 0 0 5px white;
+        }
+
+        button {
+            background: transparent;
+            color: var(--neon-blue);
+            border: 2px solid var(--neon-blue);
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        button:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        button:not(:disabled):hover {
+            background: var(--neon-blue);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        #result-display {
+            margin-top: 30px;
+            min-height: 100px;
+        }
+
+        .result-text {
+            font-size: 3rem;
+            font-weight: bold;
+            background: -webkit-linear-gradient(#fff, var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(188, 19, 254, 0.8);
+            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* --- ANIMATIONS --- */
+        .animating-chamber {
+            animation: chamberShake 1.5s ease-in-out forwards;
+        }
+
+        .animating-slot-left {
+            animation: convergeLeft 1.5s forwards;
+        }
+
+        .animating-slot-right {
+            animation: convergeRight 1.5s forwards;
+        }
+
+        .flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .flash-active {
+            animation: whiteoutFlash 1s forwards;
+        }
+
+        @keyframes chamberShake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-5px, 5px) rotate(-2deg); }
+            20%, 40%, 60%, 80% { transform: translate(5px, -5px) rotate(2deg); }
+        }
+
+        @keyframes convergeLeft {
+            100% { transform: translateX(75px) scale(1.2); opacity: 0; filter: brightness(2); }
+        }
+
+        @keyframes convergeRight {
+            100% { transform: translateX(-75px) scale(1.2); opacity: 0; filter: brightness(2); }
+        }
+
+        @keyframes whiteoutFlash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🧬 Blox Fruits DNA Splicer 🧬</h1>
+
+    <div class="container">
+        <!-- Left Fruit Panel -->
+        <div class="fruit-panel" id="fruit-list-1">
+            <div class="fruit" draggable="true" data-name="Kitsune">Kitsune</div>
+            <div class="fruit" draggable="true" data-name="Dough">Dough</div>
+            <div class="fruit" draggable="true" data-name="Leopard">Leopard</div>
+            <div class="fruit" draggable="true" data-name="Dragon">Dragon</div>
+            <div class="fruit" draggable="true" data-name="Portal">Portal</div>
+            <div class="fruit" draggable="true" data-name="Buddha">Buddha</div>
+        </div>
+
+        <!-- The Machine -->
+        <div class="machine">
+            <div class="chamber" id="fusion-chamber">
+                <div class="slot" id="slot1">Drop Fruit</div>
+                <div class="slot" id="slot2">Drop Fruit</div>
+            </div>
+            
+            <button id="combine-btn" disabled>COMBINE!</button>
+            <button id="reset-btn" style="margin-top: 15px; font-size: 1rem; padding: 10px 20px; border-color: #555; color: #aaa;">Reset Chamber</button>
+
+            <div id="result-display"></div>
+        </div>
+
+        <!-- Right Fruit Panel -->
+        <div class="fruit-panel" id="fruit-list-2">
+            <div class="fruit" draggable="true" data-name="T-Rex">T-Rex</div>
+            <div class="fruit" draggable="true" data-name="Rumble">Rumble</div>
+            <div class="fruit" draggable="true" data-name="Venom">Venom</div>
+            <div class="fruit" draggable="true" data-name="Spirit">Spirit</div>
+            <div class="fruit" draggable="true" data-name="Magma">Magma</div>
+            <div class="fruit" draggable="true" data-name="Ice">Ice</div>
+        </div>
+    </div>
+
+    <!-- For the explosion effect -->
+    <div class="flash-overlay" id="flash"></div>
+
+    <script>
+        const fruits = document.querySelectorAll('.fruit');
+        const slots = document.querySelectorAll('.slot');
+        const combineBtn = document.getElementById('combine-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const resultDisplay = document.getElementById('result-display');
+        const chamber = document.getElementById('fusion-chamber');
+        const flash = document.getElementById('flash');
+
+        let loadedFruits = { slot1: null, slot2: null };
+
+        // 1. Setup Drag Events
+        fruits.forEach(fruit => {
+            fruit.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', fruit.getAttribute('data-name'));
+                // Make it look slightly transparent while dragging
+                setTimeout(() => fruit.style.opacity = '0.5', 0);
+            });
+            fruit.addEventListener('dragend', () => {
+                fruit.style.opacity = '1';
+            });
+        });
+
+        // 2. Setup Drop Zones (Slots)
+        slots.forEach(slot => {
+            slot.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Necessary to allow dropping
+                slot.classList.add('drag-over');
+            });
+
+            slot.addEventListener('dragleave', () => {
+                slot.classList.remove('drag-over');
+            });
+
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                
+                const fruitName = e.dataTransfer.getData('text/plain');
+                if (fruitName) {
+                    slot.textContent = fruitName;
+                    slot.classList.add('filled');
+                    loadedFruits[slot.id] = fruitName;
+                    
+                    // Style the slot based on the fruit dropped
+                    const draggedFruitEl = document.querySelector(`.fruit[data-name="${fruitName}"]`);
+                    if(draggedFruitEl) {
+                        slot.style.background = window.getComputedStyle(draggedFruitEl).background;
+                    }
+                    
+                    checkReady();
+                }
+            });
+        });
+
+        // 3. Check if both slots are full
+        function checkReady() {
+            if (loadedFruits.slot1 && loadedFruits.slot2) {
+                combineBtn.disabled = false;
+            } else {
+                combineBtn.disabled = true;
+            }
+        }
+
+        // 4. Reset functionality
+        resetBtn.addEventListener('click', resetMachine);
+
+        function resetMachine() {
+            loadedFruits = { slot1: null, slot2: null };
+            combineBtn.disabled = true;
+            resultDisplay.innerHTML = '';
+            
+            slots.forEach(slot => {
+                slot.textContent = 'Drop Fruit';
+                slot.classList.remove('filled', 'animating-slot-left', 'animating-slot-right');
+                slot.style.background = '';
+                slot.style.transform = '';
+                slot.style.opacity = '';
+                slot.style.filter = '';
+            });
+            
+            chamber.classList.remove('animating-chamber');
+        }
+
+        // 5. The Combine Animation & Logic
+        combineBtn.addEventListener('click', () => {
+            combineBtn.disabled = true;
+            resultDisplay.innerHTML = ''; // clear old result
+
+            const f1 = loadedFruits.slot1;
+            const f2 = loadedFruits.slot2;
+
+            // Trigger Animations
+            chamber.classList.add('animating-chamber');
+            document.getElementById('slot1').classList.add('animating-slot-left');
+            document.getElementById('slot2').classList.add('animating-slot-right');
+
+            // Wait for slots to converge, then flash
+            setTimeout(() => {
+                flash.classList.add('flash-active');
+            }, 1000);
+
+            // Wait for flash to peak, then show result and reset slots invisibly
+            setTimeout(() => {
+                showResult(f1, f2);
+                flash.classList.remove('flash-active');
+                
+                // Hide the slots while the result is showing
+                slots.forEach(slot => slot.style.opacity = '0');
+            }, 1500);
+        });
+
+        // 6. Generate the Hybrid Name
+        function showResult(fruit1, fruit2) {
+            const prefixes = ["Awakened", "Abyssal", "Radiant", "Corrupted", "Demonic", "Cosmic", "Prime"];
+            const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+            
+            // Sometimes it fuses perfectly, sometimes it's a messy hybrid
+            const roll = Math.random();
+            let hybridName = "";
+            
+            if (roll > 0.5 && fruit1 !== fruit2) {
+                // Slice names together (e.g., Kitsune + Dough = Kitsough)
+                const part1 = fruit1.slice(0, Math.ceil(fruit1.length / 2));
+                const part2 = fruit2.slice(Math.floor(fruit2.length / 2));
+                hybridName = `${randomPrefix} ${part1}${part2}`;
+            } else {
+                // Hyphenated hybrid
+                hybridName = `${randomPrefix} ${fruit1}-${fruit2}`;
+            }
+
+            resultDisplay.innerHTML = `<div class="result-text">${hybridName}</div>`;
+        }
+    </script>
+</body>
+</html>
