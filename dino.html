@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino Runner: Cheater's Edition</title>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .game-wrapper {
+            position: relative;
+            background: #fff;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            border-radius: 8px;
+            background-color: #87CEEB; /* Sky Blue */
+            display: block;
+            max-width: 100%;
+        }
+        .instructions {
+            margin-top: 10px;
+            color: #555;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        #ui-container {
+            background: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 2px solid #0f3460;
+        }
+        h2 {
+            margin-top: 0;
+            color: #e94560;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #a2a8d3;
+        }
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+        button:hover { background: #ff477e; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        
+        .toggle-on { background: #4CAF50 !important; }
+        .toggle-on:hover { background: #45a049 !important; }
+        
+        .btn-row {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-row button { margin-top: 0; }
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #e94560;
+        }
+        
+        @media (max-width: 800px) {
+            .container { flex-direction: column; align-items: center; }
+            #ui-container { width: 100%; max-width: 600px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Game Area -->
+        <div class="game-wrapper">
+            <canvas id="gameCanvas" width="800" height="300"></canvas>
+            <div class="instructions">Press [SPACE] or [UP] to Jump. Click Canvas to focus.</div>
+        </div>
+
+        <!-- Cheat Menu Area -->
+        <div id="ui-container">
+            <h2>🦖 Cheat Menu</h2>
+            
+            <div class="control-group">
+                <label>Status & Game Flow</label>
+                <div class="btn-row">
+                    <button id="btnPause">🛑 Pause</button>
+                    <button id="btnRestart">🔄 Restart</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Powers</label>
+                <button id="btnGodMode" style="margin-bottom: 8px;">🦖 God Mode: OFF</button>
+                <button id="btnSuperJump">🚀 Super Jump: OFF</button>
+            </div>
+
+            <div class="control-group">
+                <label>⚡ Speed Multiplier: <span id="speedVal">1.0</span>x</label>
+                <input type="range" id="inputSpeed" min="0.5" max="3" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label>Environment</label>
+                <button id="btnRemoveObs">🌵 Clear Obstacles</button>
+            </div>
+
+            <div class="control-group">
+                <label>Stats</label>
+                <button id="btnAddScore" style="margin-bottom: 8px;">🎯 +1000 Score</button>
+                <button id="btnAddLife">❤️ Add Extra Life</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game State
+        let frames = 0;
+        let score = 0;
+        let isGameOver = false;
+        let isPaused = false;
+        
+        // Cheats State
+        let godMode = false;
+        let superJump = false;
+        let gameSpeed = 1.0;
+        let extraLives = 0;
+
+        const GROUND_Y = 250;
+        
+        // Input Handling
+        let spacePressed = false;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                if(e.target == document.body) e.preventDefault(); // Prevent scrolling
+                spacePressed = true;
+                if (isGameOver) resetGame();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                spacePressed = false;
+            }
+        });
+        // Touch support for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            spacePressed = true;
+            if (isGameOver) resetGame();
+        }, {passive: false});
+        canvas.addEventListener('touchend', () => spacePressed = false);
+
+        const dino = {
+            x: 50,
+            y: GROUND_Y - 40,
+            w: 40,
+            h: 40,
+            dy: 0,
+            gravity: 0.6,
+            jumpPower: -10,
+            grounded: true,
+            invulnerable: false,
+            invulnTimer: 0,
+            
+            draw() {
+                // Blink if invulnerable
+                if (this.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) {
+                    ctx.globalAlpha = 0.5;
+                } else {
+                    ctx.globalAlpha = 1.0;
+                }
+
+                ctx.fillStyle = '#32CD32'; // Green Dino
+                
+                // Body
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                
+                // Head/Snout
+                ctx.fillRect(this.x + 20, this.y - 15, 30, 25);
+                
+                // Eye
+                ctx.fillStyle = 'white';
+                ctx.fillRect(this.x + 35, this.y - 10, 5, 5);
+                
+                // Legs
+                ctx.fillStyle = '#228B22'; // Darker green for legs
+                let legOffset = (this.grounded && frames % 20 < 10) ? 0 : 5; // Simple run animation
+                ctx.fillRect(this.x + 5, this.y + this.h, 10, 10 - legOffset);
+                ctx.fillRect(this.x + 25, this.y + this.h, 10, 5 + legOffset);
+                
+                ctx.globalAlpha = 1.0; // Reset alpha
+            },
+            
+            update() {
+                // Apply Gravity
+                this.dy += this.gravity * (gameSpeed > 1 ? gameSpeed * 0.8 : 1); // Adjust gravity slightly with speed
+                this.y += this.dy;
+
+                // Ground Collision
+                if (this.y + this.h >= GROUND_Y) {
+                    this.y = GROUND_Y - this.h;
+                    this.dy = 0;
+                    this.grounded = true;
+                } else {
+                    this.grounded = false;
+                }
+
+                // Jump
+                if (spacePressed && this.grounded) {
+                    let currentJump = superJump ? -16 : -11;
+                    this.dy = currentJump;
+                    this.grounded = false;
+                }
+
+                // Invulnerability logic
+                if (this.invulnerable) {
+                    this.invulnTimer--;
+                    if (this.invulnTimer <= 0) {
+                        this.invulnerable = false;
+                    }
+                }
+            }
+        };
+
+        let obstacles = [];
+        
+        class Cactus {
+            constructor() {
+                this.x = canvas.width;
+                this.w = 20 + Math.random() * 20;
+                this.h = 30 + Math.random() * 40;
+                this.y = GROUND_Y - this.h;
+                this.speed = 6;
+                this.passed = false;
+            }
+            
+            draw() {
+                ctx.fillStyle = '#006400'; // Dark Green Cactus
+                // Main trunk
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                // Branches
+                ctx.fillRect(this.x - 10, this.y + 10, 10, 15);
+                ctx.fillRect(this.x + this.w, this.y + 20, 10, 15);
+            }
+            
+            update() {
+                this.x -= this.speed * gameSpeed;
+            }
+        }
+
+        function handleObstacles() {
+            if (frames % Math.floor(100 / gameSpeed) === 0) {
+                obstacles.push(new Cactus());
+            }
+
+            for (let i = 0; i < obstacles.length; i++) {
+                let obs = obstacles[i];
+                obs.update();
+                obs.draw();
+
+                // Collision Detection (AABB)
+                if (!godMode && !dino.invulnerable) {
+                    // Slight hitbox reduction for fairness
+                    let hitBoxMargin = 5; 
+                    if (
+                        dino.x < obs.x + obs.w - hitBoxMargin &&
+                        dino.x + dino.w > obs.x + hitBoxMargin &&
+                        dino.y < obs.y + obs.h - hitBoxMargin &&
+                        dino.y + dino.h > obs.y + hitBoxMargin
+                    ) {
+                        // HIT!
+                        if (extraLives > 0) {
+                            extraLives--;
+                            updateLivesDisplay();
+                            dino.invulnerable = true;
+                            dino.invulnTimer = 90; // Approx 1.5 seconds at 60fps
+                        } else {
+                            isGameOver = true;
+                        }
+                    }
+                }
+
+                // Remove off-screen obstacles
+                if (obs.x + obs.w < 0) {
+                    obstacles.shift();
+                    i--;
+                }
+            }
+        }
+
+        function drawEnvironment() {
+            // Sky is handled by canvas background color
+            
+            // Ground
+            ctx.fillStyle = '#EEDD82'; // Sandy yellow
+            ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+            
+            // Ground details (simple noise)
+            ctx.fillStyle = '#DAA520';
+            for(let i=0; i<canvas.width; i+=40) {
+                let offset = (frames * 2 * gameSpeed) % 40;
+                ctx.fillRect(i - offset, GROUND_Y + 10, 10, 2);
+                ctx.fillRect(i + 20 - offset, GROUND_Y + 25, 5, 2);
+            }
+        }
+
+        function drawText() {
+            ctx.fillStyle = '#333';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Score: ${Math.floor(score)}`, canvas.width - 20, 30);
+            
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#e94560';
+            ctx.fillText(`❤️ x ${extraLives}`, 20, 30);
+            
+            if (godMode) {
+                ctx.fillStyle = '#DAA520';
+                ctx.fillText(`GOD MODE`, 20, 60);
+            }
+
+            if (isGameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 20);
+                ctx.font = '20px Arial';
+                ctx.fillText("Press Space or Restart to play again", canvas.width/2, canvas.height/2 + 20);
+            } else if (isPaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText("PAUSED", canvas.width/2, canvas.height/2);
+            }
+        }
+
+        function resetGame() {
+            dino.y = GROUND_Y - dino.h;
+            dino.dy = 0;
+            obstacles = [];
+            score = 0;
+            frames = 0;
+            isGameOver = false;
+            dino.invulnerable = false;
+        }
+
+        function gameLoop() {
+            if (!isPaused && !isGameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                drawEnvironment();
+                dino.update();
+                dino.draw();
+                handleObstacles();
+                
+                score += 0.1 * gameSpeed;
+                frames++;
+                drawText();
+            } else {
+                // If paused or game over, just redraw static state
+                if(isGameOver || isPaused) {
+                    drawText(); 
+                }
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // UI Bindings
+        const btnGodMode = document.getElementById('btnGodMode');
+        const btnSuperJump = document.getElementById('btnSuperJump');
+        const inputSpeed = document.getElementById('inputSpeed');
+        const speedVal = document.getElementById('speedVal');
+        const btnRemoveObs = document.getElementById('btnRemoveObs');
+        const btnAddScore = document.getElementById('btnAddScore');
+        const btnPause = document.getElementById('btnPause');
+        const btnRestart = document.getElementById('btnRestart');
+        const btnAddLife = document.getElementById('btnAddLife');
+
+        btnGodMode.addEventListener('click', () => {
+            godMode = !godMode;
+            btnGodMode.classList.toggle('toggle-on');
+            btnGodMode.innerText = godMode ? "🦖 God Mode: ON" : "🦖 God Mode: OFF";
+        });
+
+        btnSuperJump.addEventListener('click', () => {
+            superJump = !superJump;
+            btnSuperJump.classList.toggle('toggle-on');
+            btnSuperJump.innerText = superJump ? "🚀 Super Jump: ON" : "🚀 Super Jump: OFF";
+        });
+
+        inputSpeed.addEventListener('input', (e) => {
+            gameSpeed = parseFloat(e.target.value);
+            speedVal.innerText = gameSpeed.toFixed(1);
+        });
+
+        btnRemoveObs.addEventListener('click', () => {
+            obstacles = [];
+        });
+
+        btnAddScore.addEventListener('click', () => {
+            score += 1000;
+        });
+
+        btnPause.addEventListener('click', () => {
+            isPaused = !isPaused;
+            btnPause.innerText = isPaused ? "▶️ Resume" : "🛑 Pause";
+            btnPause.classList.toggle('toggle-on');
+            
+            // Force a draw frame to show/hide pause text
+            if(isPaused) {
+               drawText();
+            }
+        });
+
+        btnRestart.addEventListener('click', () => {
+            resetGame();
+            if(isPaused) btnPause.click(); // Unpause if paused
+        });
+
+        function updateLivesDisplay() {
+            btnAddLife.innerText = `❤️ Add Extra Life (${extraLives})`;
+        }
+
+        btnAddLife.addEventListener('click', () => {
+            extraLives++;
+            updateLivesDisplay();
+        });
+
+        // Start
+        updateLivesDisplay();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
