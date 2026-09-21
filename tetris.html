@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris: Cheater's Edition</title>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 25px;
+            max-width: 900px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .game-wrapper {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            border: 3px solid #e94560;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            background-color: #16213e;
+            display: block;
+            border-radius: 4px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .instructions {
+            margin-top: 15px;
+            color: #a2a8d3;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        #cheat-menu {
+            background: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+            width: 320px;
+            border: 2px solid #e94560;
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
+        }
+        h2 {
+            margin-top: 0;
+            color: #00ffff;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px dashed #00ffff;
+            padding-bottom: 10px;
+            font-size: 24px;
+            text-shadow: 0 0 5px #00ffff;
+        }
+        .stat-display {
+            font-size: 22px;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #ffd700;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #00ffff;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #fff;
+        }
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #e94560;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        input[type="range"] {
+            accent-color: #00ffff;
+            padding: 0;
+        }
+
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button:last-child { margin-bottom: 0; }
+        button:hover { background: #ff477e; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(233, 69, 96, 0.4); }
+        button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        
+        .btn-toggle.active { background: #00ffff; color: #1a1a2e; box-shadow: 0 0 10px #00ffff; }
+        .btn-toggle.active:hover { background: #33ffff; }
+        .btn-action { background: #32cd32; }
+        .btn-action:hover { background: #3cb371; box-shadow: 0 6px 12px rgba(50, 205, 50, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Game Area -->
+        <div class="game-wrapper">
+            <!-- 10 cols x 20 rows, 30px per block = 300x600 -->
+            <canvas id="gameCanvas" width="300" height="600"></canvas>
+            <div class="instructions">Use Arrow Keys: Left/Right to move, Up to rotate, Down to drop.</div>
+        </div>
+
+        <!-- Cheat Menu Area -->
+        <div id="cheat-menu">
+            <h2>Hacker Panel</h2>
+            
+            <div class="stat-display">SCORE: <span id="scoreDisplay">0</span></div>
+
+            <div class="control-group">
+                <label>🧩 Force Piece Shape</label>
+                <select id="pieceSelect">
+                    <option value="" disabled selected>Select to Override...</option>
+                    <option value="I">I - Cyan (Line)</option>
+                    <option value="J">J - Blue</option>
+                    <option value="L">L - Orange</option>
+                    <option value="O">O - Yellow (Square)</option>
+                    <option value="S">S - Green</option>
+                    <option value="T">T - Purple</option>
+                    <option value="Z">Z - Red</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>🚀 Gravity Manipulation</label>
+                <button id="btnNoGravity" class="btn-toggle">No Gravity: OFF</button>
+                <label style="margin-top:10px;">Drop Speed (ms)</label>
+                <input type="range" id="inputSpeed" min="50" max="1500" step="50" value="800" dir="rtl">
+            </div>
+
+            <div class="control-group">
+                <label>🛠️ Grid Editing</label>
+                <button id="btnClear4" class="btn-action">💥 Nuke Bottom 4 Lines</button>
+                <button id="btnAddScore" class="btn-action">💰 Inject +10,000 Score</button>
+            </div>
+
+            <div class="control-group">
+                <label>⚙️ System Control</label>
+                <button id="btnPause" class="btn-toggle">⏸️ Pause Execution</button>
+                <button id="btnRestart">🔄 Reboot System</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        const ROWS = 20;
+        const COLS = 10;
+        const BLOCK_SIZE = 30;
+
+        // Colors for each piece
+        const COLORS = {
+            'I': '#00ffff', // Cyan
+            'J': '#0000ff', // Blue
+            'L': '#ffa500', // Orange
+            'O': '#ffff00', // Yellow
+            'S': '#00ff00', // Green
+            'T': '#800080', // Purple
+            'Z': '#ff0000'  // Red
+        };
+
+        // Tetromino Shapes (Matrices)
+        const SHAPES = {
+            'I': [
+                [0,0,0,0],
+                [1,1,1,1],
+                [0,0,0,0],
+                [0,0,0,0]
+            ],
+            'J': [
+                [1,0,0],
+                [1,1,1],
+                [0,0,0]
+            ],
+            'L': [
+                [0,0,1],
+                [1,1,1],
+                [0,0,0]
+            ],
+            'O': [
+                [1,1],
+                [1,1]
+            ],
+            'S': [
+                [0,1,1],
+                [1,1,0],
+                [0,0,0]
+            ],
+            'T': [
+                [0,1,0],
+                [1,1,1],
+                [0,0,0]
+            ],
+            'Z': [
+                [1,1,0],
+                [0,1,1],
+                [0,0,0]
+            ]
+        };
+        const PIECE_TYPES = Object.keys(SHAPES);
+
+        let grid = [];
+        let score = 0;
+        let isGameOver = false;
+        let isPaused = false;
+        
+        let dropCounter = 0;
+        let dropInterval = 800; // ms per drop
+        let lastTime = 0;
+        let reqAnimId = null;
+
+        // Current Piece
+        let piece = {
+            type: '',
+            matrix: [],
+            color: '',
+            x: 0,
+            y: 0
+        };
+
+        // Cheat states
+        let noGravity = false;
+
+        function createGrid() {
+            return Array.from({length: ROWS}, () => Array(COLS).fill(0));
+        }
+
+        function randomPieceType() {
+            return PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)];
+        }
+
+        function spawnPiece(type = randomPieceType()) {
+            piece.type = type;
+            piece.matrix = JSON.parse(JSON.stringify(SHAPES[type])); // Deep copy
+            piece.color = COLORS[type];
+            piece.y = 0;
+            piece.x = Math.floor(COLS / 2) - Math.floor(piece.matrix[0].length / 2);
+
+            // Check if game over right upon spawn
+            if (collide(grid, piece)) {
+                isGameOver = true;
+            }
+        }
+
+        function collide(board, obj) {
+            const m = obj.matrix;
+            for (let y = 0; y < m.length; y++) {
+                for (let x = 0; x < m[y].length; x++) {
+                    if (m[y][x] !== 0) {
+                        // Check bounds and overlapping existing blocks
+                        if (
+                            board[y + obj.y] === undefined || // Below floor
+                            board[y + obj.y][x + obj.x] === undefined || // Out of walls
+                            board[y + obj.y][x + obj.x] !== 0 // Hit placed block
+                        ) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function rotate(matrix) {
+            // Transpose
+            for (let y = 0; y < matrix.length; y++) {
+                for (let x = 0; x < y; x++) {
+                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+                }
+            }
+            // Reverse rows
+            matrix.forEach(row => row.reverse());
+        }
+
+        function merge(board, obj) {
+            obj.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        board[y + obj.y][x + obj.x] = obj.color;
+                    }
+                });
+            });
+        }
+
+        function playerDrop() {
+            piece.y++;
+            if (collide(grid, piece)) {
+                piece.y--;
+                merge(grid, piece);
+                spawnPiece();
+                clearLines();
+            }
+            dropCounter = 0;
+        }
+
+        function playerMove(dir) {
+            piece.x += dir;
+            if (collide(grid, piece)) {
+                piece.x -= dir;
+            }
+        }
+
+        function playerRotate() {
+            const pos = piece.x;
+            let offset = 1;
+            rotate(piece.matrix);
+            // Wall Kick implementation
+            while (collide(grid, piece)) {
+                piece.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (offset > piece.matrix[0].length) {
+                    // Rotate back if wall kick fails
+                    rotate(piece.matrix); // 1
+                    rotate(piece.matrix); // 2
+                    rotate(piece.matrix); // 3 (undo)
+                    piece.x = pos;
+                    return;
+                }
+            }
+        }
+
+        function clearLines() {
+            let linesCleared = 0;
+            outer: for (let y = ROWS - 1; y >= 0; y--) {
+                for (let x = 0; x < COLS; x++) {
+                    if (grid[y][x] === 0) {
+                        continue outer;
+                    }
+                }
+                const row = grid.splice(y, 1)[0].fill(0);
+                grid.unshift(row);
+                y++;
+                linesCleared++;
+            }
+            
+            if (linesCleared > 0) {
+                // Classic scoring: 1=40, 2=100, 3=300, 4=1200
+                const points = [0, 40, 100, 300, 1200];
+                score += points[linesCleared];
+                scoreDisplay.innerText = score.toLocaleString();
+            }
+        }
+
+        function drawMatrix(matrix, offset, colorOverride = null) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        ctx.fillStyle = colorOverride || value;
+                        ctx.fillRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeStyle = '#16213e';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        
+                        // Add some shiny effect
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.fillRect((x + offset.x) * BLOCK_SIZE + 2, (y + offset.y) * BLOCK_SIZE + 2, BLOCK_SIZE - 4, BLOCK_SIZE / 2);
+                    }
+                });
+            });
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#16213e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<=COLS; i++) {
+                ctx.beginPath(); ctx.moveTo(i*BLOCK_SIZE, 0); ctx.lineTo(i*BLOCK_SIZE, canvas.height); ctx.stroke();
+            }
+            for(let i=0; i<=ROWS; i++) {
+                ctx.beginPath(); ctx.moveTo(0, i*BLOCK_SIZE); ctx.lineTo(canvas.width, i*BLOCK_SIZE); ctx.stroke();
+            }
+
+            drawMatrix(grid, {x: 0, y: 0});
+            if (!isGameOver) {
+                drawMatrix(piece.matrix, {x: piece.x, y: piece.y}, piece.color);
+            }
+
+            if (isGameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#e94560';
+                ctx.font = 'bold 30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+            } else if (isPaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00ffff';
+                ctx.font = 'bold 30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        function update(time = 0) {
+            if (isPaused || isGameOver) {
+                draw();
+                reqAnimId = requestAnimationFrame(update);
+                return;
+            }
+
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            if (!noGravity) {
+                dropCounter += deltaTime;
+                if (dropCounter > dropInterval) {
+                    playerDrop();
+                }
+            }
+
+            draw();
+            reqAnimId = requestAnimationFrame(update);
+        }
+
+        document.addEventListener('keydown', event => {
+            if (isPaused || isGameOver) return;
+            // Prevent default scrolling for arrows
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].indexOf(event.code) > -1) {
+                event.preventDefault();
+            }
+
+            if (event.code === 'ArrowLeft') {
+                playerMove(-1);
+            } else if (event.code === 'ArrowRight') {
+                playerMove(1);
+            } else if (event.code === 'ArrowDown') {
+                playerDrop();
+            } else if (event.code === 'ArrowUp') {
+                playerRotate();
+            }
+        });
+
+        
+        // 1. Force Piece
+        document.getElementById('pieceSelect').addEventListener('change', (e) => {
+            const type = e.target.value;
+            if (type && SHAPES[type]) {
+                piece.type = type;
+                piece.matrix = JSON.parse(JSON.stringify(SHAPES[type]));
+                piece.color = COLORS[type];
+                
+                // Ensure it doesn't instantly collide on switch. Push it up if needed.
+                while(collide(grid, piece) && piece.y > 0) {
+                    piece.y--;
+                }
+                
+                e.target.value = ""; // Reset select
+            }
+        });
+
+        // 2. No Gravity Toggle
+        const btnNoGravity = document.getElementById('btnNoGravity');
+        btnNoGravity.addEventListener('click', () => {
+            noGravity = !noGravity;
+            btnNoGravity.classList.toggle('active', noGravity);
+            btnNoGravity.innerText = noGravity ? "No Gravity: ON" : "No Gravity: OFF";
+            dropCounter = 0; // Reset counter
+        });
+
+        // 3. Drop Speed Slider
+        const inputSpeed = document.getElementById('inputSpeed');
+        inputSpeed.addEventListener('input', (e) => {
+            dropInterval = parseInt(e.target.value);
+        });
+
+        // 4. Nuke Bottom 4 Lines
+        document.getElementById('btnClear4').addEventListener('click', () => {
+            // Remove bottom 4
+            grid.splice(ROWS - 4, 4);
+            // Add 4 empty rows at the top
+            for(let i=0; i<4; i++) {
+                grid.unshift(Array(COLS).fill(0));
+            }
+            // Add some points for the cheat!
+            score += 1000;
+            scoreDisplay.innerText = score.toLocaleString();
+        });
+
+        // 5. Inject Score
+        document.getElementById('btnAddScore').addEventListener('click', () => {
+            score += 10000;
+            scoreDisplay.innerText = score.toLocaleString();
+        });
+
+        // 6. Pause & Restart
+        const btnPause = document.getElementById('btnPause');
+        btnPause.addEventListener('click', () => {
+            isPaused = !isPaused;
+            btnPause.classList.toggle('active', isPaused);
+            btnPause.innerText = isPaused ? "▶️ Resume Execution" : "⏸️ Pause Execution";
+        });
+
+        document.getElementById('btnRestart').addEventListener('click', () => {
+            grid = createGrid();
+            score = 0;
+            scoreDisplay.innerText = score;
+            isGameOver = false;
+            if(isPaused) btnPause.click(); // Unpause
+            dropCounter = 0;
+            spawnPiece();
+        });
+
+        grid = createGrid();
+        spawnPiece();
+        reqAnimId = requestAnimationFrame(update);
+
+    </script>
+</body>
+</html>
