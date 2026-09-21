@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird: Hacker Edition</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            max-width: 900px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        /* Game Canvas Container */
+        .game-wrapper {
+            position: relative;
+            background: #222;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            border: 2px solid #333;
+        }
+        canvas {
+            display: block;
+            border-radius: 4px;
+            background-color: #70c5ce; /* Bright blue sky */
+            cursor: pointer;
+        }
+        .instructions {
+            margin-top: 15px;
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* Cheat Menu Panel */
+        #cheat-menu {
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 8px;
+            width: 320px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #0f0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px dashed #0f0;
+            padding-bottom: 10px;
+            font-size: 22px;
+        }
+        .control-group {
+            margin-bottom: 20px;
+            background: #111;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 3px solid #0f0;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        /* Buttons & Inputs */
+        button {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 14px;
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
+        button:last-child { margin-bottom: 0; }
+        button:hover { background: #333; border-color: #0f0; color: #0f0; }
+        button:active { transform: scale(0.98); }
+        
+        /* Specific Button Colors */
+        .btn-toggle.active { background: #0a330a; border-color: #0f0; color: #0f0; }
+        .btn-danger { border-color: #800; color: #f55; }
+        .btn-danger:hover { background: #300; border-color: #f00; color: #f00; }
+        .btn-action { border-color: #088; color: #5ff; }
+        .btn-action:hover { background: #033; border-color: #0ff; color: #0ff; }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #0f0;
+        }
+
+        .stat-display {
+            font-size: 20px;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #0f0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Game Area -->
+        <div class="game-wrapper">
+            <canvas id="gameCanvas" width="400" height="500"></canvas>
+            <div class="instructions">Click or Spacebar to Flap.</div>
+        </div>
+
+        <!-- Cheat Menu Area -->
+        <div id="cheat-menu">
+            <h2>Hacker Terminal</h2>
+            
+            <div class="stat-display">SCORE: <span id="scoreDisplay">0</span></div>
+
+            <div class="control-group">
+                <label>🚀 Combat Systems</label>
+                <button id="btnAutoMissile" class="btn-toggle">Auto-Missile: OFF</button>
+                <button id="btnFireMissile" class="btn-action">💥 Fire Missile (Manual)</button>
+            </div>
+
+            <div class="control-group">
+                <label>⏱️ Time & Space Manipulation</label>
+                <label style="color:#fff;">Speed: <span id="speedVal">1.0</span>x</label>
+                <input type="range" id="inputSpeed" min="0.5" max="5" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label>🛠️ Environment Control</label>
+                <button id="btnRemovePipes" class="btn-danger">🌵 Eradicate All Pipes</button>
+                <button id="btnAddScore" class="btn-action">🎯 Inject +10 Score</button>
+            </div>
+
+            <div class="control-group">
+                <label>⚙️ System Control</label>
+                <button id="btnPause" class="btn-toggle">⏸️ Pause Execution</button>
+                <button id="btnRestart" class="btn-danger">🔄 Reboot System</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const uiScore = document.getElementById('scoreDisplay');
+
+        // Game Constants & State
+        const GRAVITY = 0.5;
+        const JUMP_STRENGTH = -8;
+        const BASE_SPEED = 3;
+        const PIPE_SPAWN_RATE = 100; // frames
+        const FLOOR_HEIGHT = 100;
+        const MISSILE_COOLDOWN = 48; // ~800ms at 60fps
+
+        let frames = 0;
+        let score = 0;
+        let isGameOver = false;
+        
+        // Entities
+        let bird = { x: 80, y: 250, r: 15, v: 0 };
+        let pipes = [];
+        let missiles = [];
+        let floorX = 0;
+        let missileTimer = 0;
+
+        // Cheat States
+        let gameSpeed = 1.0;
+        let isPaused = false;
+        let autoMissile = false;
+
+        // Input Handling
+        function flap() {
+            if (isGameOver) resetGame();
+            else if (!isPaused) bird.v = JUMP_STRENGTH;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (e.target === document.body) e.preventDefault();
+                flap();
+            }
+        });
+        canvas.addEventListener('mousedown', flap);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); flap(); }, {passive: false});
+
+        // Fire Missile Function
+        function fireMissile() {
+            if(isGameOver || isPaused) return;
+            missiles.push({
+                x: bird.x + bird.r,
+                y: bird.y,
+                w: 20,
+                h: 8,
+                speed: 8
+            });
+        }
+
+        function drawBird() {
+            ctx.save();
+            ctx.translate(bird.x, bird.y);
+            
+            // Rotate bird based on velocity
+            let rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (bird.v * 0.1)));
+            ctx.rotate(rotation);
+
+            // Body (Yellow)
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Eye (White + Black pupil)
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.arc(6, -5, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(8, -5, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Beak (Orange)
+            ctx.fillStyle = '#FF8C00';
+            ctx.beginPath();
+            ctx.moveTo(10, 2);
+            ctx.lineTo(22, 5);
+            ctx.lineTo(10, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawEnvironment() {
+            // Background is canvas color, just draw the moving floor
+            ctx.fillStyle = '#ded895'; // Dirt color
+            ctx.fillRect(0, canvas.height - FLOOR_HEIGHT, canvas.width, FLOOR_HEIGHT);
+            
+            ctx.fillStyle = '#73bf2e'; // Grass top
+            ctx.fillRect(0, canvas.height - FLOOR_HEIGHT, canvas.width, 15);
+
+            // Floor texture lines moving
+            ctx.fillStyle = '#558022';
+            for (let i = 0; i < canvas.width; i += 30) {
+                let offset = floorX % 30;
+                ctx.fillRect(i - offset, canvas.height - FLOOR_HEIGHT, 4, 15);
+            }
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = '#2ecc71'; // Green pipes
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 3;
+
+            pipes.forEach(p => {
+                // Top Pipe
+                ctx.fillRect(p.x, 0, p.w, p.topH);
+                ctx.strokeRect(p.x, 0, p.w, p.topH);
+                // Top Pipe Cap
+                ctx.fillRect(p.x - 2, p.topH - 20, p.w + 4, 20);
+                ctx.strokeRect(p.x - 2, p.topH - 20, p.w + 4, 20);
+
+                // Bottom Pipe
+                let botY = p.topH + p.gap;
+                let botH = canvas.height - FLOOR_HEIGHT - botY;
+                ctx.fillRect(p.x, botY, p.w, botH);
+                ctx.strokeRect(p.x, botY, p.w, botH);
+                // Bottom Pipe Cap
+                ctx.fillRect(p.x - 2, botY, p.w + 4, 20);
+                ctx.strokeRect(p.x - 2, botY, p.w + 4, 20);
+            });
+        }
+
+        function drawMissiles() {
+            missiles.forEach(m => {
+                // Missile Body
+                ctx.fillStyle = '#FF4500'; // Orange-Red
+                ctx.fillRect(m.x, m.y - m.h/2, m.w, m.h);
+                // Nose cone
+                ctx.beginPath();
+                ctx.moveTo(m.x + m.w, m.y - m.h/2);
+                ctx.lineTo(m.x + m.w + 6, m.y);
+                ctx.lineTo(m.x + m.w, m.y + m.h/2);
+                ctx.fill();
+                // Thruster flame
+                ctx.fillStyle = '#FFA500';
+                ctx.beginPath();
+                ctx.moveTo(m.x, m.y - m.h/2 + 2);
+                ctx.lineTo(m.x - (Math.random()*10+5), m.y);
+                ctx.lineTo(m.x, m.y + m.h/2 - 2);
+                ctx.fill();
+            });
+        }
+
+        function update() {
+            if (isGameOver || isPaused) return;
+
+            // Update Bird
+            bird.v += GRAVITY * (gameSpeed > 1 ? 1 : gameSpeed); // Keep gravity somewhat normal at high speeds
+            bird.y += bird.v * gameSpeed;
+
+            // Floor & Ceiling Collision
+            if (bird.y + bird.r >= canvas.height - FLOOR_HEIGHT) {
+                bird.y = canvas.height - FLOOR_HEIGHT - bird.r;
+                isGameOver = true;
+            }
+            if (bird.y - bird.r <= 0) {
+                bird.y = bird.r;
+                bird.v = 0;
+            }
+
+            // Floor movement
+            let currentSpeed = BASE_SPEED * gameSpeed;
+            floorX += currentSpeed;
+
+            // Spawn Pipes
+            let spawnInterval = Math.max(20, Math.floor(PIPE_SPAWN_RATE / gameSpeed));
+            if (frames % spawnInterval === 0) {
+                let gap = 130; // Gap between top and bottom
+                let minPipeH = 50;
+                let maxPipeH = canvas.height - FLOOR_HEIGHT - gap - minPipeH;
+                let topH = Math.floor(Math.random() * maxPipeH) + minPipeH;
+                
+                pipes.push({ x: canvas.width, w: 50, topH: topH, gap: gap, passed: false });
+            }
+
+            // Update Pipes & Collisions
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                let p = pipes[i];
+                p.x -= currentSpeed;
+
+                // Bird Collision with Pipe (AABB approximate)
+                let birdLeft = bird.x - bird.r + 4;
+                let birdRight = bird.x + bird.r - 4;
+                let birdTop = bird.y - bird.r + 4;
+                let birdBot = bird.y + bird.r - 4;
+
+                let hitTop = (birdRight > p.x && birdLeft < p.x + p.w && birdTop < p.topH);
+                let hitBot = (birdRight > p.x && birdLeft < p.x + p.w && birdBot > p.topH + p.gap);
+                
+                if (hitTop || hitBot) {
+                    isGameOver = true;
+                }
+
+                // Score Logic
+                if (!p.passed && p.x + p.w < bird.x) {
+                    p.passed = true;
+                    score++;
+                    uiScore.innerText = score;
+                }
+
+                // Remove off-screen pipes
+                if (p.x + p.w < 0) {
+                    pipes.splice(i, 1);
+                }
+            }
+
+            // Update Missiles
+            for (let i = missiles.length - 1; i >= 0; i--) {
+                let m = missiles[i];
+                m.x += m.speed * gameSpeed;
+
+                let missileDestroyed = false;
+
+                // Check Missile collision with pipes
+                for (let j = pipes.length - 1; j >= 0; j--) {
+                    let p = pipes[j];
+                    if (m.x + m.w > p.x && m.x < p.x + p.w) {
+                        if (m.y > 0 && m.y < canvas.height - FLOOR_HEIGHT) {
+                            // Hit a pipe! Destroy both pipe and missile
+                            pipes.splice(j, 1);
+                            missileDestroyed = true;
+                            // Add a small point reward for destroying a pipe? Let's just leave score intact
+                            break;
+                        }
+                    }
+                }
+
+                if (missileDestroyed || m.x > canvas.width) {
+                    missiles.splice(i, 1);
+                }
+            }
+
+            // Auto-Missile Logic
+            if (autoMissile) {
+                missileTimer--;
+                if (missileTimer <= 0) {
+                    fireMissile();
+                    missileTimer = Math.floor(MISSILE_COOLDOWN / gameSpeed);
+                }
+            }
+
+            frames++;
+        }
+
+        function drawOverlay() {
+            if (isGameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 40px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 20);
+                ctx.font = '20px Courier New';
+                ctx.fillStyle = '#0f0';
+                ctx.fillText("Score: " + score, canvas.width/2, canvas.height/2 + 20);
+                ctx.fillStyle = '#fff';
+                ctx.fillText("Click to Restart", canvas.width/2, canvas.height/2 + 60);
+            } else if (isPaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#0ff';
+                ctx.font = 'bold 40px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("PAUSED", canvas.width/2, canvas.height/2);
+            }
+        }
+
+        function gameLoop() {
+            update();
+
+            // Render
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#70c5ce';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawPipes();
+            drawMissiles();
+            drawEnvironment();
+            drawBird();
+            drawOverlay();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resetGame() {
+            bird = { x: 80, y: 250, r: 15, v: 0 };
+            pipes = [];
+            missiles = [];
+            score = 0;
+            frames = 0;
+            missileTimer = 0;
+            isGameOver = false;
+            uiScore.innerText = score;
+        }
+
+        // --- CHEAT MENU BINDINGS ---
+        
+        const btnAutoMissile = document.getElementById('btnAutoMissile');
+        btnAutoMissile.addEventListener('click', () => {
+            autoMissile = !autoMissile;
+            btnAutoMissile.classList.toggle('active');
+            btnAutoMissile.innerText = autoMissile ? "Auto-Missile: ON" : "Auto-Missile: OFF";
+        });
+
+        document.getElementById('btnFireMissile').addEventListener('click', fireMissile);
+
+        document.getElementById('btnRemovePipes').addEventListener('click', () => {
+            pipes = [];
+        });
+
+        document.getElementById('btnAddScore').addEventListener('click', () => {
+            score += 10;
+            uiScore.innerText = score;
+        });
+
+        const inputSpeed = document.getElementById('inputSpeed');
+        const speedVal = document.getElementById('speedVal');
+        inputSpeed.addEventListener('input', (e) => {
+            gameSpeed = parseFloat(e.target.value);
+            speedVal.innerText = gameSpeed.toFixed(1);
+        });
+
+        const btnPause = document.getElementById('btnPause');
+        btnPause.addEventListener('click', () => {
+            isPaused = !isPaused;
+            btnPause.classList.toggle('active');
+            btnPause.innerText = isPaused ? "▶️ Resume Execution" : "⏸️ Pause Execution";
+        });
+
+        document.getElementById('btnRestart').addEventListener('click', () => {
+            resetGame();
+            if (isPaused) btnPause.click(); // Unpause if paused
+        });
+
+        // Start Game
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
