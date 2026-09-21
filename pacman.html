@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Man: Cheater's Edition</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 25px;
+            max-width: 1000px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Game Canvas Container */
+        .game-wrapper {
+            background: #161b22;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(255, 255, 0, 0.1);
+            border: 2px solid #ffea00;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            background-color: #000;
+            display: block;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,255,0.5);
+        }
+        .instructions {
+            margin-top: 15px;
+            color: #8b949e;
+            font-size: 14px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Cheat Menu Panel */
+        #cheat-menu {
+            background: #161b22;
+            padding: 25px;
+            border-radius: 12px;
+            width: 320px;
+            border: 2px solid #3fb950;
+            box-shadow: 0 10px 30px rgba(63, 185, 80, 0.15);
+        }
+        h2 {
+            margin-top: 0;
+            color: #3fb950;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px dashed #3fb950;
+            padding-bottom: 10px;
+            font-size: 24px;
+            text-shadow: 0 0 5px rgba(63, 185, 80, 0.5);
+        }
+        .stat-display {
+            font-size: 22px;
+            color: #ffea00;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 234, 0, 0.6);
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #58a6ff;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #c9d1d9;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #58a6ff;
+        }
+
+        button {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 13px;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        button:last-child { margin-bottom: 0; }
+        button:hover { background: #30363d; border-color: #8b949e; }
+        button:active { transform: scale(0.98); }
+        
+        /* Toggle & Action Buttons */
+        .btn-toggle.active { background: #238636; color: #fff; border-color: #2ea043; box-shadow: 0 0 10px rgba(46, 160, 67, 0.4); }
+        .btn-toggle.active:hover { background: #2ea043; }
+        
+        .btn-power.active { background: #1f6feb; color: #fff; border-color: #388bfd; box-shadow: 0 0 10px rgba(56, 139, 253, 0.4); }
+        .btn-power.active:hover { background: #388bfd; }
+
+        .btn-danger { color: #ff7b72; border-color: #da3633; }
+        .btn-danger:hover { background: #da3633; color: white; }
+        
+        .btn-action { color: #f2cc60; border-color: #d29922; }
+        .btn-action:hover { background: #d29922; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Game Area -->
+        <div class="game-wrapper">
+            <!-- 21 cols x 21 rows, 20px per block = 420x420 -->
+            <canvas id="gameCanvas" width="420" height="420"></canvas>
+            <div class="instructions">Use Arrow Keys to Move.</div>
+        </div>
+
+        <!-- Cheat Menu Area -->
+        <div id="cheat-menu">
+            <h2>Hacker Terminal</h2>
+            
+            <div class="stat-display">SCORE: <span id="scoreDisplay">0</span></div>
+
+            <div class="control-group">
+                <label>🛡️ God & Power Systems</label>
+                <button id="btnGodMode" class="btn-toggle">God Mode: OFF</button>
+                <button id="btnPermPower" class="btn-power">Perm Power Mode: OFF</button>
+            </div>
+
+            <div class="control-group">
+                <label>⏱️ Overclock (Speed)</label>
+                <label style="font-size:12px; font-weight:normal;">Multiplier: <span id="speedVal">1.0</span>x</label>
+                <input type="range" id="inputSpeed" min="0.5" max="3" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label>🛠️ Environment Control</label>
+                <button id="btnClearMaze" class="btn-action">✨ Instant Clear Maze</button>
+                <button id="btnAddScore" class="btn-action">💰 Inject +10,000 Score</button>
+            </div>
+
+            <div class="control-group">
+                <label>⚙️ System Control</label>
+                <button id="btnPause" class="btn-toggle">⏸️ Pause Execution</button>
+                <button id="btnRestart" class="btn-danger">🔄 Reboot System</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        const TILE_SIZE = 20;
+        const ROWS = 21;
+        const COLS = 21;
+
+        // Map Legend: 0=Wall, 1=Dot, 2=Empty, 3=Power Pellet, 4=Ghost Gate
+        const INITIAL_MAP = [
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,3,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,3,0],
+            [0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0],
+            [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+            [0,1,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0],
+            [0,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,0],
+            [0,0,0,0,0,1,0,0,0,2,0,2,0,0,0,1,0,0,0,0,0],
+            [2,2,2,2,0,1,0,2,2,2,2,2,2,2,0,1,0,2,2,2,2],
+            [0,0,0,0,0,1,0,2,0,4,4,4,0,2,0,1,0,0,0,0,0],
+            [2,2,2,2,2,1,2,2,0,2,2,2,0,2,2,1,2,2,2,2,2],
+            [0,0,0,0,0,1,0,2,0,0,0,0,0,2,0,1,0,0,0,0,0],
+            [2,2,2,2,0,1,0,2,2,2,2,2,2,2,0,1,0,2,2,2,2],
+            [0,0,0,0,0,1,0,2,0,0,0,0,0,2,0,1,0,0,0,0,0],
+            [0,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0],
+            [0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0],
+            [0,3,1,1,0,1,1,1,1,1,2,1,1,1,1,1,0,1,1,3,0],
+            [0,0,0,1,0,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,0],
+            [0,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,0],
+            [0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0],
+            [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        ];
+
+        let map = [];
+        let score = 0;
+        let isGameOver = false;
+        let isPaused = false;
+        let frames = 0;
+        
+        // Cheat States
+        let godMode = false;
+        let permPower = false;
+        let gameSpeed = 1.0;
+        
+        // Power Pellet Timer
+        let powerTimer = 0;
+
+        // Entities
+        let pacman;
+        let ghosts = [];
+        const GHOST_COLORS = ['#ff0000', '#ffb8ff', '#00ffff', '#ffb852']; // Red, Pink, Cyan, Orange
+
+        // Directions
+        const DIRS = {
+            UP: {x: 0, y: -1},
+            DOWN: {x: 0, y: 1},
+            LEFT: {x: -1, y: 0},
+            RIGHT: {x: 1, y: 0},
+            NONE: {x: 0, y: 0}
+        };
+
+        class Entity {
+            constructor(c, r, speed, isPacman = false) {
+                this.c = c;
+                this.r = r;
+                this.startC = c;
+                this.startR = r;
+                this.targetC = c;
+                this.targetR = r;
+                
+                this.dir = DIRS.NONE;
+                this.nextDir = DIRS.NONE;
+                
+                this.progress = 0; // 0.0 to 1.0 between current (c,r) and target (targetC, targetR)
+                this.baseSpeed = speed;
+                this.isPacman = isPacman;
+            }
+
+            reset() {
+                this.c = this.startC;
+                this.r = this.startR;
+                this.targetC = this.c;
+                this.targetR = this.r;
+                this.dir = DIRS.NONE;
+                this.nextDir = DIRS.NONE;
+                this.progress = 0;
+            }
+
+            getPixelPos() {
+                // Interpolate pixel position for smooth movement
+                let px = (this.c + this.dir.x * this.progress) * TILE_SIZE + TILE_SIZE/2;
+                let py = (this.r + this.dir.y * this.progress) * TILE_SIZE + TILE_SIZE/2;
+                return {x: px, y: py};
+            }
+
+            isValidTile(c, r) {
+                // Wrap around logic for valid checks
+                if (c < 0) c = COLS - 1;
+                if (c >= COLS) c = 0;
+                // Cannot walk through walls. Only Ghosts can walk through gates(4)
+                if (map[r][c] === 0) return false;
+                if (map[r][c] === 4 && this.isPacman) return false;
+                return true;
+            }
+
+            updateMovement() {
+                // If exactly at a tile center (progress == 0)
+                if (this.progress === 0) {
+                    // Try to apply queued next direction
+                    if (this.nextDir !== DIRS.NONE && this.isValidTile(this.c + this.nextDir.x, this.r + this.nextDir.y)) {
+                        this.dir = this.nextDir;
+                    }
+                    
+                    // If current direction hits a wall, stop
+                    if (this.dir !== DIRS.NONE && !this.isValidTile(this.c + this.dir.x, this.r + this.dir.y)) {
+                        this.dir = DIRS.NONE;
+                    }
+
+                    // Set target
+                    if (this.dir !== DIRS.NONE) {
+                        this.targetC = this.c + this.dir.x;
+                        this.targetR = this.r + this.dir.y;
+                    }
+                }
+
+                // Move towards target
+                if (this.dir !== DIRS.NONE) {
+                    this.progress += this.baseSpeed * gameSpeed;
+                    
+                    if (this.progress >= 1.0) {
+                        // Reached target tile
+                        this.c = this.targetC;
+                        this.r = this.targetR;
+                        
+                        // Screen Wrap Handling
+                        if (this.c < 0) { this.c = COLS - 1; this.targetC = this.c; }
+                        else if (this.c >= COLS) { this.c = 0; this.targetC = this.c; }
+                        
+                        this.progress = 0; // Snap to center for next decision
+                    }
+                }
+            }
+        }
+
+        class PacMan extends Entity {
+            constructor(c, r) {
+                super(c, r, 0.1, true);
+            }
+
+            draw() {
+                let pos = this.getPixelPos();
+                let angle = 0;
+                
+                if (this.dir === DIRS.RIGHT) angle = 0;
+                else if (this.dir === DIRS.DOWN) angle = Math.PI / 2;
+                else if (this.dir === DIRS.LEFT) angle = Math.PI;
+                else if (this.dir === DIRS.UP) angle = -Math.PI / 2;
+
+                // Mouth animation
+                let mouthOpen = (Math.sin(frames * 0.5 * gameSpeed) + 1) / 2; // 0 to 1
+                let mouthAngle = 0.2 * Math.PI * mouthOpen;
+
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                ctx.rotate(angle);
+                
+                ctx.fillStyle = '#ffea00';
+                ctx.beginPath();
+                ctx.arc(0, 0, TILE_SIZE/2 - 2, mouthAngle, 2 * Math.PI - mouthAngle);
+                ctx.lineTo(0, 0);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+
+            checkEat() {
+                if (this.progress < 0.5) { // Eat when somewhat close to tile center
+                    let tile = map[this.r][this.c];
+                    if (tile === 1) {
+                        map[this.r][this.c] = 2; // Empty
+                        score += 10;
+                        scoreDisplay.innerText = score.toLocaleString();
+                    } else if (tile === 3) {
+                        map[this.r][this.c] = 2;
+                        score += 50;
+                        scoreDisplay.innerText = score.toLocaleString();
+                        powerTimer = 400; // Power duration
+                    }
+                }
+            }
+        }
+
+        class Ghost extends Entity {
+            constructor(c, r, color) {
+                super(c, r, 0.08, false);
+                this.color = color;
+                this.isEaten = false;
+                this.dir = DIRS.UP; // Start moving up
+                this.nextDir = DIRS.UP;
+            }
+
+            isVulnerable() {
+                return permPower || powerTimer > 0;
+            }
+
+            updateAI() {
+                // Ghost makes a decision only when exactly on a tile center
+                if (this.progress === 0) {
+                    if (this.isEaten) {
+                        // Return to center immediately
+                        this.reset();
+                        this.isEaten = false;
+                        return;
+                    }
+
+                    // Simple AI: Gather valid directions (excluding reverse)
+                    let validDirs = [];
+                    const allDirs = [DIRS.UP, DIRS.DOWN, DIRS.LEFT, DIRS.RIGHT];
+                    
+                    for (let d of allDirs) {
+                        // Prevent instant 180 turnaround unless forced
+                        if (this.dir.x !== 0 && d.x === -this.dir.x && d.y === -this.dir.y) continue;
+                        if (this.dir.y !== 0 && d.y === -this.dir.y && d.x === -this.dir.x) continue;
+                        
+                        if (this.isValidTile(this.c + d.x, this.r + d.y)) {
+                            validDirs.push(d);
+                        }
+                    }
+
+                    // If stuck (dead end), allow reverse
+                    if (validDirs.length === 0) {
+                        this.nextDir = {x: -this.dir.x, y: -this.dir.y};
+                    } else {
+                        // Pick random valid direction
+                        this.nextDir = validDirs[Math.floor(Math.random() * validDirs.length)];
+                    }
+                }
+                
+                // If vulnerable, move slightly slower unless permPower is on (cheats shouldn't penalize ghost speed if they are always blue)
+                let tempSpeed = this.baseSpeed;
+                if (this.isVulnerable() && !permPower) {
+                     this.baseSpeed = 0.05; 
+                } else {
+                     this.baseSpeed = 0.08;
+                }
+                
+                this.updateMovement();
+            }
+
+            draw() {
+                if (this.isEaten) return;
+
+                let pos = this.getPixelPos();
+                let renderColor = this.color;
+                
+                if (this.isVulnerable()) {
+                    // Flash white when timer is running out
+                    if (!permPower && powerTimer < 100 && Math.floor(frames / 10) % 2 === 0) {
+                        renderColor = '#ffffff';
+                    } else {
+                        renderColor = '#1f6feb'; // Edible Blue
+                    }
+                }
+
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                
+                ctx.fillStyle = renderColor;
+                ctx.beginPath();
+                // Dome top
+                ctx.arc(0, -2, TILE_SIZE/2 - 2, Math.PI, 0);
+                // Wavy bottom
+                ctx.lineTo(TILE_SIZE/2 - 2, TILE_SIZE/2 - 2);
+                ctx.lineTo(TILE_SIZE/4, TILE_SIZE/2 - 5);
+                ctx.lineTo(0, TILE_SIZE/2 - 2);
+                ctx.lineTo(-TILE_SIZE/4, TILE_SIZE/2 - 5);
+                ctx.lineTo(-TILE_SIZE/2 + 2, TILE_SIZE/2 - 2);
+                ctx.closePath();
+                ctx.fill();
+
+                // Eyes
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(-3, -4, 2, 0, 2*Math.PI);
+                ctx.arc(3, -4, 2, 0, 2*Math.PI);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000'; // pupils
+                // Look direction
+                let px = this.dir.x;
+                let py = this.dir.y;
+                ctx.beginPath();
+                ctx.arc(-3 + px, -4 + py, 1, 0, 2*Math.PI);
+                ctx.arc(3 + px, -4 + py, 1, 0, 2*Math.PI);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        function initGame() {
+            // Deep copy map
+            map = INITIAL_MAP.map(row => [...row]);
+            score = 0;
+            scoreDisplay.innerText = "0";
+            isGameOver = false;
+            powerTimer = 0;
+            
+            // Spawn Pacman (Row 15, Col 10 is usually safe start)
+            pacman = new PacMan(10, 15);
+            
+            // Spawn Ghosts in the box (Row 9, Cols 9, 10, 11)
+            ghosts = [
+                new Ghost(10, 7, GHOST_COLORS[0]), // Red (Outside)
+                new Ghost(9, 9, GHOST_COLORS[1]),  // Pink
+                new Ghost(10, 9, GHOST_COLORS[2]), // Cyan
+                new Ghost(11, 9, GHOST_COLORS[3])  // Orange
+            ];
+        }
+
+        function drawMap() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let px = c * TILE_SIZE;
+                    let py = r * TILE_SIZE;
+                    
+                    if (map[r][c] === 0) {
+                        // Draw Wall
+                        ctx.strokeStyle = '#1f6feb';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    } else if (map[r][c] === 1) {
+                        // Draw Dot
+                        ctx.fillStyle = '#ffbaba';
+                        ctx.fillRect(px + TILE_SIZE/2 - 2, py + TILE_SIZE/2 - 2, 4, 4);
+                    } else if (map[r][c] === 3) {
+                        // Draw Power Pellet (Pulse effect)
+                        let radius = 6 + Math.sin(frames * 0.1) * 1.5;
+                        ctx.fillStyle = '#ffbaba';
+                        ctx.beginPath();
+                        ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, radius, 0, 2*Math.PI);
+                        ctx.fill();
+                    } else if (map[r][c] === 4) {
+                         // Draw Gate
+                         ctx.fillStyle = '#ffb8ff';
+                         ctx.fillRect(px, py + TILE_SIZE/2 - 2, TILE_SIZE, 4);
+                    }
+                }
+            }
+        }
+
+        function handleCollisions() {
+            let pPos = pacman.getPixelPos();
+            
+            for (let g of ghosts) {
+                let gPos = g.getPixelPos();
+                let dist = Math.hypot(pPos.x - gPos.x, pPos.y - gPos.y);
+                
+                if (dist < TILE_SIZE * 0.8) {
+                    if (g.isVulnerable()) {
+                        // Eat Ghost
+                        g.isEaten = true;
+                        score += 200;
+                        scoreDisplay.innerText = score.toLocaleString();
+                    } else if (!godMode) {
+                        // Pacman Dies
+                        isGameOver = true;
+                    }
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!isPaused && !isGameOver) {
+                // Update Logic
+                pacman.updateMovement();
+                pacman.checkEat();
+                
+                for(let g of ghosts) {
+                    g.updateAI();
+                }
+
+                handleCollisions();
+
+                if (powerTimer > 0) powerTimer -= gameSpeed;
+                frames++;
+            }
+
+            // Render
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawMap();
+            for(let g of ghosts) g.draw();
+            pacman.draw();
+
+            // Overlays
+            if (isGameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0,0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ff7b72';
+                ctx.font = 'bold 30px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("SYSTEM FAILURE", canvas.width/2, canvas.height/2);
+            } else if (isPaused) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0,0, canvas.width, canvas.height);
+                ctx.fillStyle = '#3fb950';
+                ctx.font = 'bold 30px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("EXECUTION PAUSED", canvas.width/2, canvas.height/2);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) {
+                e.preventDefault(); // Prevent scrolling
+            }
+            if (isPaused || isGameOver) return;
+
+            if (e.code === 'ArrowUp') pacman.nextDir = DIRS.UP;
+            else if (e.code === 'ArrowDown') pacman.nextDir = DIRS.DOWN;
+            else if (e.code === 'ArrowLeft') pacman.nextDir = DIRS.LEFT;
+            else if (e.code === 'ArrowRight') pacman.nextDir = DIRS.RIGHT;
+        });
+
+        // Cheat: God Mode
+        const btnGodMode = document.getElementById('btnGodMode');
+        btnGodMode.addEventListener('click', () => {
+            godMode = !godMode;
+            btnGodMode.classList.toggle('active');
+            btnGodMode.innerText = godMode ? "God Mode: ON" : "God Mode: OFF";
+        });
+
+        // Cheat: Perm Power
+        const btnPermPower = document.getElementById('btnPermPower');
+        btnPermPower.addEventListener('click', () => {
+            permPower = !permPower;
+            btnPermPower.classList.toggle('active');
+            btnPermPower.innerText = permPower ? "Perm Power Mode: ON" : "Perm Power Mode: OFF";
+        });
+
+        // Cheat: Speed Control
+        const inputSpeed = document.getElementById('inputSpeed');
+        const speedVal = document.getElementById('speedVal');
+        inputSpeed.addEventListener('input', (e) => {
+            gameSpeed = parseFloat(e.target.value);
+            speedVal.innerText = gameSpeed.toFixed(1);
+        });
+
+        // Cheat: Clear Maze
+        document.getElementById('btnClearMaze').addEventListener('click', () => {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (map[r][c] === 1) {
+                        map[r][c] = 2;
+                        score += 10;
+                    } else if (map[r][c] === 3) {
+                        map[r][c] = 2;
+                        score += 50;
+                    }
+                }
+            }
+            scoreDisplay.innerText = score.toLocaleString();
+        });
+
+        // Cheat: Add Score
+        document.getElementById('btnAddScore').addEventListener('click', () => {
+            score += 10000;
+            scoreDisplay.innerText = score.toLocaleString();
+        });
+
+        // Control: Pause
+        const btnPause = document.getElementById('btnPause');
+        btnPause.addEventListener('click', () => {
+            isPaused = !isPaused;
+            btnPause.classList.toggle('active');
+            btnPause.innerText = isPaused ? "▶️ Resume Execution" : "⏸️ Pause Execution";
+        });
+
+        // Control: Restart
+        document.getElementById('btnRestart').addEventListener('click', () => {
+            initGame();
+            if(isPaused) btnPause.click(); // Unpause automatically
+        });
+
+        // Start
+        initGame();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
