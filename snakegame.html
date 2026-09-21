@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            background-color: #222;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+            margin: 0;
+        }
+        canvas {
+            background-color: #000;
+            border: 4px solid #444;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        #ui-container {
+            margin-left: 30px;
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        h2 { margin-top: 0; color: #4CAF50; }
+        .control-group {
+            margin-bottom: 15px;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 5px;
+        }
+        button:hover { background: #45a049; }
+        button.danger { background: #f44336; }
+        button.danger:hover { background: #d32f2f; }
+        input[type="number"], input[type="range"] { width: 100%; box-sizing: border-box; }
+        .stat { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #FFD700; }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <div id="ui-container">
+        <h2>Cheat Menu</h2>
+        <div class="stat">Score: <span id="scoreDisplay">0</span></div>
+        
+        <div class="control-group">
+            <label><b>God Mode (Extra Lives)</b></label>
+            <p style="font-size: 12px; margin: 5px 0;">Go through walls and yourself without dying.</p>
+            <button id="btnGodMode" class="danger">God Mode: OFF</button>
+        </div>
+
+        <div class="control-group">
+            <label><b>Spawn Apples</b></label>
+            <button id="btnSpawnApple">Spawn 5 Apples</button>
+        </div>
+
+        <div class="control-group">
+            <label><b>Set Length</b></label>
+            <input type="number" id="inputLength" value="10" min="1">
+            <button id="btnSetLength">Apply Length</button>
+        </div>
+
+        <div class="control-group">
+            <label><b>Game Speed (ms per frame)</b></label>
+            <input type="range" id="inputSpeed" min="20" max="200" value="100">
+        </div>
+
+        <div class="control-group">
+            <label><b>Free Points</b></label>
+            <button id="btnAddScore">+1000 Score</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const grid = 20;
+        let count = 0;
+        let score = 0;
+        let gameSpeed = 100; // lower is faster
+        let godMode = false;
+        
+        let snake = [
+            {x: 160, y: 160},
+            {x: 140, y: 160},
+            {x: 120, y: 160},
+            {x: 100, y: 160}
+        ];
+        
+        let dx = grid;
+        let dy = 0;
+        let apples = [];
+
+        // UI Elements
+        const scoreDisplay = document.getElementById("scoreDisplay");
+        const btnGodMode = document.getElementById("btnGodMode");
+        const btnSpawnApple = document.getElementById("btnSpawnApple");
+        const inputLength = document.getElementById("inputLength");
+        const btnSetLength = document.getElementById("btnSetLength");
+        const inputSpeed = document.getElementById("inputSpeed");
+        const btnAddScore = document.getElementById("btnAddScore");
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        function spawnApple() {
+            apples.push({
+                x: getRandomInt(0, canvas.width / grid) * grid,
+                y: getRandomInt(0, canvas.height / grid) * grid
+            });
+        }
+
+        // Initial apple
+        spawnApple();
+
+        function resetGame() {
+            snake = [{x: 160, y: 160}, {x: 140, y: 160}, {x: 120, y: 160}, {x: 100, y: 160}];
+            dx = grid;
+            dy = 0;
+            score = 0;
+            apples = [];
+            spawnApple();
+            scoreDisplay.innerText = score;
+        }
+
+        function gameLoop() {
+            setTimeout(function() {
+                requestAnimationFrame(gameLoop);
+            }, gameSpeed);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Move Snake
+            let head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+            // Wall Collision Logic
+            if (godMode) {
+                // Wrap around screen
+                if (head.x < 0) head.x = canvas.width - grid;
+                else if (head.x >= canvas.width) head.x = 0;
+                
+                if (head.y < 0) head.y = canvas.height - grid;
+                else if (head.y >= canvas.height) head.y = 0;
+            } else {
+                // Normal death
+                if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+                    resetGame();
+                    return;
+                }
+            }
+
+            snake.unshift(head); // Add new head
+
+            // Check Apple Collision
+            let ateApple = false;
+            for (let i = 0; i < apples.length; i++) {
+                if (head.x === apples[i].x && head.y === apples[i].y) {
+                    score += 10;
+                    scoreDisplay.innerText = score;
+                    apples.splice(i, 1);
+                    ateApple = true;
+                    break;
+                }
+            }
+
+            if (!ateApple) {
+                snake.pop(); // Remove tail if no apple eaten
+            }
+
+            if (apples.length === 0) spawnApple(); // Ensure at least 1 apple
+
+            // Draw Apples
+            ctx.fillStyle = "red";
+            apples.forEach(apple => {
+                ctx.fillRect(apple.x, apple.y, grid - 1, grid - 1);
+            });
+
+            // Draw Snake & Check Self Collision
+            ctx.fillStyle = "lime";
+            for (let i = 0; i < snake.length; i++) {
+                // Color head slightly differently
+                if (i === 0) ctx.fillStyle = "#4CAF50"; 
+                else ctx.fillStyle = "lime";
+
+                ctx.fillRect(snake[i].x, snake[i].y, grid - 1, grid - 1);
+
+                // Self collision
+                if (!godMode && i !== 0 && snake[i].x === head.x && snake[i].y === head.y) {
+                    resetGame();
+                    return;
+                }
+            }
+        }
+
+        // --- CONTROLS ---
+        document.addEventListener('keydown', function(e) {
+            // Prevent reversing direction directly
+            if (e.which === 37 && dx === 0) { dx = -grid; dy = 0; }      // Left
+            else if (e.which === 38 && dy === 0) { dy = -grid; dx = 0; } // Up
+            else if (e.which === 39 && dx === 0) { dx = grid; dy = 0; }  // Right
+            else if (e.which === 40 && dy === 0) { dy = grid; dx = 0; }  // Down
+        });
+
+        // --- CHEAT MENU LOGIC ---
+        btnGodMode.addEventListener('click', () => {
+            godMode = !godMode;
+            if(godMode) {
+                btnGodMode.innerText = "God Mode: ON";
+                btnGodMode.style.background = "#FFD700";
+                btnGodMode.style.color = "#000";
+            } else {
+                btnGodMode.innerText = "God Mode: OFF";
+                btnGodMode.style.background = "#f44336";
+                btnGodMode.style.color = "#fff";
+            }
+        });
+
+        btnSpawnApple.addEventListener('click', () => {
+            for(let i=0; i<5; i++) spawnApple();
+        });
+
+        btnSetLength.addEventListener('click', () => {
+            let targetLength = parseInt(inputLength.value);
+            if (targetLength < 1) targetLength = 1;
+            
+            if (targetLength > snake.length) {
+                let diff = targetLength - snake.length;
+                let tail = snake[snake.length - 1];
+                for(let i=0; i<diff; i++) {
+                    snake.push({x: tail.x, y: tail.y}); // Add stationary segments to end
+                }
+            } else if (targetLength < snake.length) {
+                snake.length = targetLength; // Truncate array
+            }
+        });
+
+        inputSpeed.addEventListener('input', (e) => {
+            gameSpeed = e.target.value;
+        });
+
+        btnAddScore.addEventListener('click', () => {
+            score += 1000;
+            scoreDisplay.innerText = score;
+        });
+
+        // Start Game
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
